@@ -23,7 +23,7 @@ contract Reputation {
         uint8 behaviorID;
         string behavior;
         uint  time;
-        uint8 currentWeight;
+        bytes16 currentWeight;
     }
     
     struct Behaviors {
@@ -34,10 +34,10 @@ contract Reputation {
     }
     
     struct Environment {
-        uint8[4] omega; 
-        uint8[4] alpha; // penalty factor, index 2,4 is policy action, index 1 is large number of requests in a short time
-        uint8 CrPmax;
-        uint8 gamma;
+        bytes16[4] omega; 
+        bytes16[4] alpha; // penalty factor, index 2,4 is policy action, index 1 is large number of requests in a short time
+        bytes16 CrPmax;
+        bytes16 gamma; // forgetting factor
     }
 
     // mapping devie address => Behavior recort for reputation compute
@@ -54,7 +54,7 @@ contract Reputation {
     }
     
     /// @dev updateEnvironment update parameters of reputation function
-    function updateEnvironment(string memory _name, uint256 index, uint8 value) public {
+    function updateEnvironment(string memory _name, uint256 index, bytes16 value) public {
         require(
             msg.sender == owner,
             "updateEnvironment error: Only owner can update environment factors!"
@@ -89,8 +89,8 @@ contract Reputation {
             "reputationCompute error: only acc or mc can call function!"
         );
         
-        uint CrN = 0;
-        uint CrP = 0;
+        bytes16 CrN;
+        bytes16 CrP;
         uint Tblocked;
         
         if (_ismisbehavior) {
@@ -99,34 +99,46 @@ contract Reputation {
             behaviorsLookup[_subject].LegalBehaviors.push(BehaviorRecord(_behaviorID, _behavior, _time, evAttr.omega[_behaviorID-1]));
         }
         
-        for (uint i = 0;i < behaviorsLookup[_subject].MisBehaviors.length; i++) {
-            uint8 tmp = behaviorsLookup[_subject].MisBehaviors[i].currentWeight; 
-            CrN = CrN + tmp;
-            if (tmp > 1) {
-                behaviorsLookup[_subject].MisBehaviors[i].currentWeight = tmp - 1;
-            }
+        // calculate negative impact part
+        uint misLen = behaviorsLookup[_subject].MisBehaviors.length;
+        for (uint i = 0; i < misLen; i++) {
+            bytes16 wi = behaviorsLookup[_subject].MisBehaviors[i].currentWeight; 
+            CrN = ABDKMathQuad.add(
+                CrN,
+                ABDKMathQuad.div(wi, ABDKMathQuad.fromUInt(misLen-i))
+            );           
         }
+        CrN = ABDKMathQuad.neg(ABDKMathQuad.mul(CrN, ABDKMathQuad.fromUInt(misLen)));
+
         
+        // calculate positive impact part
+        uint legLen = behaviorsLookup[_subject].LegalBehaviors.length - behaviorsLookup[_subject].begin;
         for (uint i = behaviorsLookup[_subject].begin; i < behaviorsLookup[_subject].LegalBehaviors.length; i++) {
-            CrP = CrP + behaviorsLookup[_subject].LegalBehaviors[i].currentWeight;
-            if (CrP >= evAttr.CrPmax) {
-                CrP = evAttr.CrPmax;
-            }
+            bytes16 wi = behaviorsLookup[_subject].MisBehaviors[i].currentWeight; 
+            bytes16 g = Utils.exp(evAttr.gamma, legLen-i);
+            CrP = ABDKMathQuad.add(
+                CrP,
+                ABDKMathQuad.mul(wi, g)
+            );
+        }
+        CrP = ABDKMathQuad.div(CrP,ABDKMathQuad.fromUInt(legLen));
+        if (ABDKMathQuad.cmp(evAttr.CrPmax, CrP) == -1) {
+            CrP = evAttr.CrPmax;
         }
 
-        if ((block.timestamp > behaviorsLookup[_subject].TimeofUnblock) && (int(CrP - CrN) < evAttr.gamma)) {
+        // calculate credit
+        int credit = ABDKMathQuad.toInt(ABDKMathQuad.add(CrP,CrN));
+
+        // calculate penalty
+        if ((block.timestamp > behaviorsLookup[_subject].TimeofUnblock) && (credit < 0)) {
             behaviorsLookup[_subject].begin = behaviorsLookup[_subject].LegalBehaviors.length-1;
-            if (CrP < CrN) {
-                Tblocked = 2**(CrN - CrP + evAttr.gamma);
-            } else {
-                Tblocked = 2**(CrP - CrN);
-            }
-            
+            Tblocked = uint(ABDKMathQuad.toInt(ABDKMathQuad.pow_2(ABDKMathQuad.fromInt(credit))));
+            // update unblocked time
             behaviorsLookup[_subject].TimeofUnblock = block.timestamp + Tblocked;
             mc.updateTimeofUnblock(_subject, behaviorsLookup[_subject].TimeofUnblock);
         }
         
-        emit isCalled(_subject, _ismisbehavior, _behavior, _time, int(CrP-CrN), Tblocked);
+        emit isCalled(_subject, _ismisbehavior, _behavior, _time, credit, Tblocked);
     }
     
     /// @dev getLastBehavior get the latest behavior condition
@@ -160,7 +172,7 @@ contract Reputation {
     
     /// @dev initEnvironment initial parameters of reputation function
     function initEnvironment() internal {
-        evAttr.alpha[0] = 2; // Too frequent request
+/*         evAttr.alpha[0] = 2; // Too frequent request
         evAttr.alpha[1] = 3; // policy check failed
         evAttr.alpha[2] = 5; // both above two
         evAttr.alpha[3] = 4; // importance policy check failed
@@ -169,7 +181,7 @@ contract Reputation {
         evAttr.omega[2] = 1;
         evAttr.omega[3] = 2;
         evAttr.CrPmax = 30;
-        evAttr.gamma = 0;
+        evAttr.gamma = 0; */
     }
 }
 
