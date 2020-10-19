@@ -19,6 +19,7 @@ library Utils {
         }
     }
 
+    /// @dev exp calculate base^expo, and return the result as a quadruple precision floating point number.
     function exp(bytes16 base, uint expo) public pure returns (bytes16) {
         bytes16 res;
         for (uint i = 0; i < expo; i++) {
