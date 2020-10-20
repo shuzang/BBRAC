@@ -36,6 +36,7 @@ contract Reputation {
     struct Environment {
         bytes16[4] omega; 
         bytes16[4] alpha; // penalty factor, index 2,4 is policy action, index 1 is large number of requests in a short time
+        bytes16[2] lambda; // weight of CrP and CrN
         bytes16 CrPmax;
         bytes16 gamma; // forgetting factor
     }
@@ -54,22 +55,42 @@ contract Reputation {
     }
     
     /// @dev updateEnvironment update parameters of reputation function
-    function updateEnvironment(string memory _name, uint256 index, bytes16 value) public {
+    /// @notice real input value is value/base, e.g. 0.1 = 1/10, 0.25 = 25/100
+    function updateEnvironment(string memory _name, uint256 index, int value, int base) public {
         require(
             msg.sender == owner,
             "updateEnvironment error: Only owner can update environment factors!"
         );
+        bytes16 input = ABDKMathQuad.div(
+            ABDKMathQuad.fromInt(value),
+            ABDKMathQuad.fromInt(base)
+        );
         if (Utils.stringCompare(_name, "omega")) {
-            evAttr.omega[index] = value;
+            require(
+                index >= 0 && index < 4,
+                "updateEnvironment error: parameter array overflow"
+            );
+            evAttr.omega[index] = input;
         }
         if (Utils.stringCompare(_name, "alpha")) {
-            evAttr.alpha[index] = value;
+            require(
+                index >= 0 && index < 4,
+                "updateEnvironment error: parameter array overflow"
+            );
+            evAttr.alpha[index] = input;
+        }
+        if (Utils.stringCompare(_name, "lambda")) {
+            require(
+                index >= 0 && index < 4,
+                "updateEnvironment error: parameter array overflow"
+            );
+            evAttr.lambda[index] = input;
         }
         if (Utils.stringCompare(_name, "CrPmax")) {
-            evAttr.CrPmax = value;
+            evAttr.CrPmax = input;
         }
         if (Utils.stringCompare(_name, "gamma")) {
-            evAttr.gamma = value;
+            evAttr.gamma = input;
         }
     }
 
@@ -127,7 +148,10 @@ contract Reputation {
         }
 
         // calculate credit
-        int credit = ABDKMathQuad.toInt(ABDKMathQuad.add(CrP,CrN));
+        int credit = ABDKMathQuad.toInt(ABDKMathQuad.add(
+            ABDKMathQuad.mul(evAttr.lambda[0], CrP),
+            ABDKMathQuad.mul(evAttr.lambda[1], CrN))
+        );
 
         // calculate penalty
         if ((block.timestamp > behaviorsLookup[_subject].TimeofUnblock) && (credit < 0)) {
@@ -172,16 +196,18 @@ contract Reputation {
     
     /// @dev initEnvironment initial parameters of reputation function
     function initEnvironment() internal {
-/*         evAttr.alpha[0] = 2; // Too frequent request
-        evAttr.alpha[1] = 3; // policy check failed
-        evAttr.alpha[2] = 5; // both above two
-        evAttr.alpha[3] = 4; // importance policy check failed
-        evAttr.omega[0] = 1;
-        evAttr.omega[1] = 1;
-        evAttr.omega[2] = 1;
-        evAttr.omega[3] = 2;
-        evAttr.CrPmax = 30;
-        evAttr.gamma = 0; */
+        evAttr.alpha[0] = 0x3ffc9999999999999999999999999999; // 0.2 
+        evAttr.alpha[1] = 0x3ffd3333333333333333333333333333; // 0.3
+        evAttr.alpha[2] = 0x3ffe0000000000000000000000000000; // 0.5
+        evAttr.alpha[3] = 0x3ffd9999999999999999999999999999; // 0.4
+        evAttr.omega[0] = 0x3ffb9999999999999999999999999999; // 0.1
+        evAttr.omega[1] = 0x3ffb9999999999999999999999999999; // 0.1
+        evAttr.omega[2] = 0x3ffb9999999999999999999999999999; // 0.1
+        evAttr.omega[3] = 0x3ffc9999999999999999999999999999; // 0.1
+        evAttr.lambda[0] = 0x3ffe0000000000000000000000000000; // 0.5
+        evAttr.lambda[1] = 0x3ffe0000000000000000000000000000; // 0.5
+        evAttr.CrPmax = 0x4003e000000000000000000000000000; // 30
+        evAttr.gamma = 0x3ffd3333333333333333333333333333; // 0.3
     }
 }
 
