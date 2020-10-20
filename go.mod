@@ -1,4 +1,4 @@
-module github.com/shuzang/BRAC
+module github.com/shuzang/BBRAC
 
 go 1.14
 
