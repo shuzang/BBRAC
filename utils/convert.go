@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -23,8 +22,6 @@ func FromFloat64(x float64) string {
 	var res string
 	f, _ := binary128.NewFromFloat64(x)
 	a, b := f.Bits() // 128bits, a is first 64bits, b is second bits
-	fmt.Println(a, b)
-	fmt.Println(strconv.FormatUint(a, 16), strconv.FormatUint(b, 16))
 	if b != 0 {
 		res = strconv.FormatUint(a, 16) + strconv.FormatUint(b, 16)
 	} else {
@@ -32,8 +29,3 @@ func FromFloat64(x float64) string {
 	}
 	return "0x" + strings.ToUpper(res)
 }
-
-// 4000921FB54442D1 8469898CC51701B8
-// 4611846683310179025 9541308523256152504
-// 3FFD555555555555 5555555555555555
-// 4610935418489492821 6148914691236517205
