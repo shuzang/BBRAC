@@ -156,7 +156,7 @@ contract Reputation {
         // calculate penalty
         if ((block.timestamp > behaviorsLookup[_subject].TimeofUnblock) && (credit < 0)) {
             behaviorsLookup[_subject].begin = behaviorsLookup[_subject].LegalBehaviors.length-1;
-            Tblocked = uint(ABDKMathQuad.toInt(ABDKMathQuad.pow_2(ABDKMathQuad.fromInt(credit))));
+            Tblocked = uint(ABDKMathQuad.toInt(ABDKMathQuad.pow_2(ABDKMathQuad.fromInt(credit*(-1)))));
             // update unblocked time
             behaviorsLookup[_subject].TimeofUnblock = block.timestamp + Tblocked;
             mc.updateTimeofUnblock(_subject, behaviorsLookup[_subject].TimeofUnblock);
