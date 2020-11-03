@@ -2,20 +2,21 @@
 
 该分支为下面论文的复现：
 
-> Zhang Y, Kasahara S, Shen Y, e.g. Smart Contract-Based Access Control for the Internet of Things[J]. IEEE Internet of Things Journal, 2019, 6(2): 1594–1605. DOI:[10.1109/JIOT.2018.2847705](https://doi.org/10.1109/JIOT.2018.2847705).
-
+> Wang P, Yue Y, Sun W, e.g. An Attribute-Based Distributed Access Control for Blockchain-enabled IoT[C/OL]//2019 International Conference on Wireless and Mobile Computing, Networking and Communications (WiMob). Barcelona, Spain: IEEE, 2019: 1–6[2020–04–02]. https://ieeexplore.ieee.org/document/8923232/. DOI:[10.1109/WiMOB.2019.8923232](https://doi.org/10.1109/WiMOB.2019.8923232).
 
 
 以下是一些数据统计。
 
 ## Deploy Gas
 
-- RC.sol: 281361 gas
-- JC.sol: 607700 gas
-- ACC.sol: 1049691 gas
+- Subject.sol: 808091 gas
+- Object.sol: 451818 gas
+- Policy.sol: 1625667 gas
+- AccessControl.sol: 1311810 gas
 
 ## Bytecode size
 
-- RC.sol: 7,735 bytes(7.7 KB)
-- JC.sol: 17,174 bytes(17.2 KB) 
-- ACC.sol: 31,231 bytes(31.2 KB)
+- Subject.sol: 23,760 bytes(23.8 KB)
+- Object.sol: 12,431 bytes(12.4 KB) 
+- Policy.sol: 49,978 bytes(50.0 KB)
+- AccessControl.sol: 40,086 bytes(40.1KB)

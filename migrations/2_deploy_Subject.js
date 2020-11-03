@@ -1,10 +1,9 @@
-var Judge = artifacts.require("Judge");
+var Subject = artifacts.require("Subject");
 
 module.exports = function(deployer, network, accounts) {
 
     if (network == "ganache") {
-        // deploy Register.sol
-        deployer.deploy(Judge, 2, 3, {from: accounts[0]});
+        deployer.deploy(Subject, {from: accounts[0]});
     };     
 }
 
