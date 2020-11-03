@@ -1,7 +1,6 @@
 // SPDX-License-Identifier:MIT
 pragma solidity >0.6.0 <0.8.0;
 
-import "./Utils.sol";
 import "./ABDKMathQuad.sol";
 
 contract Reputation {
@@ -65,31 +64,31 @@ contract Reputation {
             ABDKMathQuad.fromInt(value),
             ABDKMathQuad.fromInt(base)
         );
-        if (Utils.stringCompare(_name, "omega")) {
+        if (stringCompare(_name, "omega")) {
             require(
                 index >= 0 && index < 4,
                 "updateEnvironment error: parameter array overflow"
             );
             evAttr.omega[index] = input;
         }
-        if (Utils.stringCompare(_name, "alpha")) {
+        if (stringCompare(_name, "alpha")) {
             require(
                 index >= 0 && index < 4,
                 "updateEnvironment error: parameter array overflow"
             );
             evAttr.alpha[index] = input;
         }
-        if (Utils.stringCompare(_name, "lambda")) {
+        if (stringCompare(_name, "lambda")) {
             require(
                 index >= 0 && index < 4,
                 "updateEnvironment error: parameter array overflow"
             );
             evAttr.lambda[index] = input;
         }
-        if (Utils.stringCompare(_name, "CrPmax")) {
+        if (stringCompare(_name, "CrPmax")) {
             evAttr.CrPmax = input;
         }
-        if (Utils.stringCompare(_name, "gamma")) {
+        if (stringCompare(_name, "gamma")) {
             evAttr.gamma = input;
         }
     }
@@ -136,7 +135,7 @@ contract Reputation {
         uint legLen = behaviorsLookup[_subject].LegalBehaviors.length - behaviorsLookup[_subject].begin;
         for (uint i = behaviorsLookup[_subject].begin; i < behaviorsLookup[_subject].LegalBehaviors.length; i++) {
             bytes16 wi = behaviorsLookup[_subject].MisBehaviors[i].currentWeight; 
-            bytes16 g = Utils.exp(evAttr.gamma, legLen-i);
+            bytes16 g = exp(evAttr.gamma, legLen-i);
             CrP = ABDKMathQuad.add(
                 CrP,
                 ABDKMathQuad.mul(wi, g)
@@ -209,6 +208,31 @@ contract Reputation {
         evAttr.CrPmax = 0x4003e000000000000000000000000000; // 30
         evAttr.gamma = 0x3ffd3333333333333333333333333333; // 0.3
     }
+
+    /// @dev stringCompare determine whether the strings are equal, using length + hash comparson to reduce gas consumption
+    function stringCompare(string memory a, string memory b) public pure returns (bool) {
+        bytes memory _a = bytes(a);
+        bytes memory _b = bytes(b);
+        if (_a.length != _b.length) {
+            return false;
+        } else {
+            if (_a.length == 1) {
+                return _a[0] == _b[0];
+            } else {
+                return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
+            }
+        }
+    }
+
+    /// @dev exp calculate base^expo, and return the result as a quadruple precision floating point number.
+    function exp(bytes16 base, uint expo) public pure returns (bytes16) {
+        bytes16 res;
+        for (uint i = 0; i < expo; i++) {
+            res = ABDKMathQuad.mul(res, base);
+        }
+        return res;
+    }
+
 }
 
 

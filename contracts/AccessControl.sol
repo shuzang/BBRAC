@@ -2,8 +2,6 @@
 pragma solidity >0.6.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "./Utils.sol";
-
 contract AccessControl {
     address public manager;
     ReputationA public rc;
@@ -75,10 +73,10 @@ contract AccessControl {
             "updateSCAddr error: Only acc manager can update mc or rc address!"
         );
         require(
-            Utils.stringCompare(scType, "mc") || Utils.stringCompare(scType, "rc"),
+            stringCompare(scType, "mc") || stringCompare(scType, "rc"),
             "updateSCAddr error: Updatable contract type can only be rc or mc!"
         );
-        if (Utils.stringCompare(scType, "mc")) {
+        if (stringCompare(scType, "mc")) {
             mc = ManagementA(_scAddress);
         } else {
             rc = ReputationA(_scAddress);
@@ -232,7 +230,7 @@ contract AccessControl {
         PolicyItem[] memory result = new PolicyItem[](policies[_resource][_action].length);
         uint num = 0;
         for (uint256 i = 0; i < policies[_resource][_action].length; i++) {
-            if (Utils.stringCompare(policies[_resource][_action][i].attrName, _attrName)) {
+            if (stringCompare(policies[_resource][_action][i].attrName, _attrName)) {
                 result[num] = PolicyItem(
                     policies[_resource][_action][i].attrOwner,
                     _attrName,
@@ -265,7 +263,7 @@ contract AccessControl {
             "deletePolicyItem error: There is no policy for this resource and action at this time!"
         );
         for (uint256 i = 0; i < policies[_resource][_action].length; i++) {
-            if (Utils.stringCompare(policies[_resource][_action][i].attrName, _attrName)) {
+            if (stringCompare(policies[_resource][_action][i].attrName, _attrName)) {
                 delete policies[_resource][_action][i];
             }
         }
@@ -319,8 +317,8 @@ contract AccessControl {
             current.operator = policies[_resource][_action][i].operator;
             current.attrValue = policies[_resource][_action][i].attrValue;
 
-            if (Utils.stringCompare(current.attrOwner,"subject")) {
-                if (Utils.stringCompare(current.attrName, "deviceID") || Utils.stringCompare(current.attrName, "deviceType") || Utils.stringCompare(current.attrName, "deviceRole")) {
+            if (stringCompare(current.attrOwner,"subject")) {
+                if (stringCompare(current.attrName, "deviceID") || stringCompare(current.attrName, "deviceType") || stringCompare(current.attrName, "deviceRole")) {
                     _attrValue = mc.getFixedAttribute(subject, current.attrName);
                 } else {
                     _attrValue = mc.getCustomedAttribute(subject, current.attrName);
@@ -329,17 +327,17 @@ contract AccessControl {
                 _attrValue = resources[_resource][current.attrName].value;
             }
 
-            if (Utils.stringCompare(current.operator,">") && (stringToUint(_attrValue) <= stringToUint(current.attrValue))) {
+            if (stringCompare(current.operator,">") && (stringToUint(_attrValue) <= stringToUint(current.attrValue))) {
                 result[1] = true;
             } else {
                 result[0] = true;
             }
-            if (Utils.stringCompare(current.operator,"<") && (stringToUint(_attrValue) >= stringToUint(current.attrValue))) {
+            if (stringCompare(current.operator,"<") && (stringToUint(_attrValue) >= stringToUint(current.attrValue))) {
                 result[1] = true;
             } else {
                 result[0] = true;
             }
-            if (Utils.stringCompare(current.operator,"=") && (!Utils.stringCompare(_attrValue,current.attrValue))) {
+            if (stringCompare(current.operator,"=") && (!stringCompare(_attrValue,current.attrValue))) {
                 result[1] = true;
             } else {
                 result[0] = true;
@@ -351,10 +349,10 @@ contract AccessControl {
         }
 
         // determine policy check result when rules conflict
-        if (Utils.stringCompare(evAttr.algorithm, "denyoverrides") && result[1]) {
+        if (stringCompare(evAttr.algorithm, "denyoverrides") && result[1]) {
             policycheck = true;
         }
-        if (Utils.stringCompare(evAttr.algorithm, "allowoverrides") && result[0]) {
+        if (stringCompare(evAttr.algorithm, "allowoverrides") && result[0]) {
             policycheck = false;
         }
         
@@ -401,6 +399,21 @@ contract AccessControl {
     function deleteACC() public {
         require(msg.sender == manager, "Caller is not manager!");
         selfdestruct(msg.sender);
+    }
+
+    /// @dev stringCompare determine whether the strings are equal, using length + hash comparson to reduce gas consumption
+    function stringCompare(string memory a, string memory b) public pure returns (bool) {
+        bytes memory _a = bytes(a);
+        bytes memory _b = bytes(b);
+        if (_a.length != _b.length) {
+            return false;
+        } else {
+            if (_a.length == 1) {
+                return _a[0] == _b[0];
+            } else {
+                return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
+            }
+        }
     }
 }
 

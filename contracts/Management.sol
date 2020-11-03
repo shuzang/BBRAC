@@ -1,8 +1,6 @@
 // SPDX-License-Identifier:MIT
 pragma solidity >0.6.0 <0.8.0;
 
-import "./Utils.sol";
-
 /// @title Manage smart contracts and device attributes
 /// @author shuzang
 contract Management {
@@ -191,16 +189,16 @@ contract Management {
     {
         require(lookupTable[_device].isValued, "getFixedAttribute error: Device not registered!");
         require(
-            Utils.stringCompare(_attrName, "deviceID") || Utils.stringCompare(_attrName,"deviceType") || Utils.stringCompare(_attrName,"deviceRole"),
+            stringCompare(_attrName, "deviceID") || stringCompare(_attrName,"deviceType") || stringCompare(_attrName,"deviceRole"),
             "getFixedAttribute error: The attribute passed in is not a device fixed attribute!"
         );
-        if (Utils.stringCompare(_attrName, "deviceID")) {
+        if (stringCompare(_attrName, "deviceID")) {
             return lookupTable[_device].deviceID;
         }
-        if (Utils.stringCompare(_attrName,"deviceType")) {
+        if (stringCompare(_attrName,"deviceType")) {
             return lookupTable[_device].deviceType;
         } 
-        if (Utils.stringCompare(_attrName,"deviceRole")) {
+        if (stringCompare(_attrName,"deviceRole")) {
             return lookupTable[_device].deviceRole;
         }
     }
@@ -217,10 +215,10 @@ contract Management {
         ) 
     {
         require(lookupTable[_device].isValued, "getDeviceRelatedAddress error: Device not registered!");
-        if (Utils.stringCompare(_attrName, "manager")) {
+        if (stringCompare(_attrName, "manager")) {
             return lookupTable[_device].manager;
         }
-        if (Utils.stringCompare(_attrName, "scAddress")) {
+        if (stringCompare(_attrName, "scAddress")) {
             return lookupTable[_device].scAddress;
         }
     }
@@ -278,6 +276,21 @@ contract Management {
         );
         delete lookupTable[_device].customed[_attrName];
         rc.reputationCompute(msg.sender, false, 3, "Attribute delete", block.timestamp);
+    }
+
+    /// @dev stringCompare determine whether the strings are equal, using length + hash comparson to reduce gas consumption
+    function stringCompare(string memory a, string memory b) public pure returns (bool) {
+        bytes memory _a = bytes(a);
+        bytes memory _b = bytes(b);
+        if (_a.length != _b.length) {
+            return false;
+        } else {
+            if (_a.length == 1) {
+                return _a[0] == _b[0];
+            } else {
+                return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
+            }
+        }
     }
 }    
 

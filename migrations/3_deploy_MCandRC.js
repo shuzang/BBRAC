@@ -1,11 +1,9 @@
 var ABDKMathQuad = artifacts.require("ABDKMathQuad");
-var Utils = artifacts.require("Utils");
 var Management = artifacts.require("Management");
 var Reputation = artifacts.require("Reputation");
 
 module.exports = function(deployer, network, accounts) {
     // link lib to Management and Reputation
-    deployer.link(Utils, [Management, Reputation]);
     deployer.link(ABDKMathQuad, Reputation);
 
     if (network == "ganache") {
