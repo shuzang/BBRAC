@@ -16,6 +16,6 @@
 
 ## Bytecode size
 
-- RC.sol: 7，735 bytes(7.7 KB)
+- RC.sol: 7,735 bytes(7.7 KB)
 - JC.sol: 17,174 bytes(17.2 KB) 
 - ACC.sol: 31,231 bytes(31.2 KB)
