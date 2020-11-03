@@ -1,12 +1,7 @@
-var Management = artifacts.require("Management")
-var Reputation = artifacts.require("Reputation")
-var AccessControl = artifacts.require("AccessControl")
+var AccessControlMethod = artifacts.require("AccessControlMethod")
 
 module.exports = function(deployer, network, accounts) {
-    //var mcAddress = ""
-    //var rcAddress = ""
     if (network == "ganache") {
-        deployer.deploy(AccessControl, Management.address, Reputation.address, accounts[2], {from: accounts[2]})
-    }
-    
+        deployer.deploy(AccessControlMethod, accounts[1], {from: accounts[2]})
+    }  
 }
