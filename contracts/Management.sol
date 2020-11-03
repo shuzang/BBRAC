@@ -258,8 +258,8 @@ contract Management {
             msg.sender == lookupTable[_device].manager,
             "deleteDevice error: Only manager can remove device!"
         );
-        delete lookupTable[_device];
         delete isACCAddress[lookupTable[_device].scAddress];
+        delete lookupTable[_device];
         rc.reputationCompute(msg.sender, false, 3, "Device delete", block.timestamp);
     }
     
