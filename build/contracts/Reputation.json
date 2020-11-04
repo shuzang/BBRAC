@@ -24924,12 +24924,12 @@
       "links": {
         "Utils": "0x007282f3801E0ca53555a8ed3cf0675391AA5e18"
       },
-      "address": "0xBAdd4f2D61c89A25A297Fca554A076975BED2fa2",
-      "transactionHash": "0x19f9cfa77bd3da0349a68480a0c06ba7dbc3acb7331e103531c4d2020ee9fa0c"
+      "address": "0x42C047F27aF3AD1f755E0fd2523727561378c4e9",
+      "transactionHash": "0x819a1e6c8e62cc42c9707bece496d04784dbd398b97b0416371940a1c73adcb4"
     }
   },
   "schemaVersion": "3.3.1",
-  "updatedAt": "2020-11-03T02:35:51.155Z",
+  "updatedAt": "2020-11-04T11:53:34.144Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",

@@ -43008,12 +43008,12 @@
       "links": {
         "Utils": "0x007282f3801E0ca53555a8ed3cf0675391AA5e18"
       },
-      "address": "0xd662DfdCc2a70eaf60d87A036bb776211602B5Ab",
-      "transactionHash": "0xee464eaffefd2bb0bb3e16327589c5f86ec1f4d78ae459368f26133e5fe9b62c"
+      "address": "0x67c32C9269D53B790913b361683033a8c9f9b9EB",
+      "transactionHash": "0xd8ea01b83f083410e1bcc536cebbbd04278be3b73de9a0cc035580706e99cb47"
     }
   },
   "schemaVersion": "3.3.1",
-  "updatedAt": "2020-11-03T02:35:51.215Z",
+  "updatedAt": "2020-11-04T11:53:34.191Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",

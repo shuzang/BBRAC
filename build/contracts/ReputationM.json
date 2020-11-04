@@ -35,13 +35,13 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.7.0+commit.9e61f92b\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_subject\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"_ismisbehavior\",\"type\":\"bool\"},{\"internalType\":\"uint8\",\"name\":\"_behaviorID\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"_behavior\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"_time\",\"type\":\"uint256\"}],\"name\":\"reputationCompute\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/home/shuzang/BBRAC-dev/contracts/Management.sol\":\"ReputationM\"},\"evmVersion\":\"byzantium\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"/home/shuzang/BBRAC-dev/contracts/Management.sol\":{\"keccak256\":\"0x2de2b5871bc1cbaad182cd456cde1345ef02ab00935986e509465e1455bc6b9d\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://50b12df85ec76ed1f09c64fdb802535da6fe38214bd1d1df31f4fa99179d3565\",\"dweb:/ipfs/QmNpFi2mkEXVxQwVjveJ9GmKFS1bqUFzBgfV1pqyyjPGdA\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.7.0+commit.9e61f92b\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_subject\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"_ismisbehavior\",\"type\":\"bool\"},{\"internalType\":\"uint8\",\"name\":\"_behaviorID\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"_behavior\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"_time\",\"type\":\"uint256\"}],\"name\":\"reputationCompute\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/home/shuzang/BBRAC-dev/contracts/Management.sol\":\"ReputationM\"},\"evmVersion\":\"byzantium\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"/home/shuzang/BBRAC-dev/contracts/Management.sol\":{\"keccak256\":\"0xe6e649c30238dc50e765f8d7056e0deee017db25fbce39e20d51a0160ca88a0a\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://68c016509e3ef2bcefdef4fe8078cf169cee2d5a7ed40528c3775e1b703500b3\",\"dweb:/ipfs/QmTFVUpnyuR3rMPMXweW9tZhJ4VuWraSHCkVvr7GQL5uyF\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "immutableReferences": {},
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "// SPDX-License-Identifier:MIT\npragma solidity >0.6.0 <0.8.0;\n\n/// @title Manage smart contracts and device attributes\n/// @author shuzang\ncontract Management {\n    address public owner; // The ower of management contract \n    ReputationM public rc;\n    \n    struct RCContract {\n        bool isValued;       // for duplicate check\n        address creator;     // the peer(account) who created and deployed reputation contract\n        address scAddress;   // the address of the smart contract\n    }\n    \n    struct AttrValue {\n        bool isValued; // fro duplicate check\n        string value; // attribute value\n    }\n    \n    struct Device {\n        bool isValued;                      // for duplicate check\n        address manager;                    // the address of gateway which device belong to, for the gateway, is itself\n        address scAddress;                  // the address of access control contract associate with device\n        string  deviceID;                   // the UUID of device\n        string  deviceType;                 // device type, e.g. Loudness Sensor\n        string  deviceRole;                 // device role, e.g. validator, manager or device \n        uint256 timeofUnblocked;              // time when the resource is unblocked (0 if unblocked, otherwise, blocked)\n        mapping (string => AttrValue) customed;   // other attribute self customed, can have no element\n    }\n    \n    \n    /// Mapping is marked internal, and write own getter function\n    RCContract public rcc;\n    mapping(address => Device)  internal lookupTable;\n    mapping(address => bool) internal isACCAddress; // judge if a address is a access control contract address, used by Reputation contract\n    \n    \n    /// @dev Set contract deployer as owner\n    constructor() {\n        owner = msg.sender; // 'msg.sender' is sender of current call, contract deployer for a constructor\n    }\n    \n    /// @dev set reputation contract\n    function setRC(address  _rc, address _creator) public {\n        //duplicate unchecked\n        require(\n            !rcc.isValued,\n            \"setRC error: Reputation contract already exist!\"\n        );\n        \n        require(\n            msg.sender == owner || msg.sender == _creator,\n            \"setRC error: Only mc owner or rc creator can register!\"\n        );\n        \n        // register\n        rcc.creator = _creator;\n        rcc.scAddress = _rc;\n        rcc.isValued = true;\n        \n        // setting for contract calls\n        rc = ReputationM(_rc);\n    }\n    \n    /// @dev update the information (i.e., scAddress) of a registered reputation contract\n    function updateRC(address _rc) public {\n        require(rcc.isValued, \"Reputation contract not exist!\");\n        require(\n            msg.sender == owner || msg.sender == rcc.creator,\n            \"updateRC error: Only mc owner or rc creator can update rc!\"\n        );\n\n        rcc.scAddress = _rc;\n        rc = ReputationM(_rc);\n    }\n    \n    /// @dev deviceRegister register device attributes\n    function deviceRegister(\n        address _device,\n        address _manager,\n        address _scAddress,\n        string memory _deviceID,\n        string memory _deviceType,\n        string memory _deviceRole\n    )\n        public \n    {\n        require (\n            !lookupTable[_device].isValued,\n            \"deviceRegister error: device already registered\"\n        );\n        \n        require(\n            msg.sender == _manager,\n            \"deviceRegister error: Only manager of device can register!\"\n        );\n        \n        lookupTable[_device].manager = _manager;\n        lookupTable[_device].scAddress = _scAddress;\n        lookupTable[_device].deviceID = _deviceID;\n        lookupTable[_device].deviceType = _deviceType;\n        lookupTable[_device].deviceRole = _deviceRole;\n        lookupTable[_device].timeofUnblocked = 0;\n        lookupTable[_device].isValued = true;\n        //rc.reputationCompute(msg.sender, false, 1, \"Device register\", now ); //设备注册事件提交会触发阻塞时间更新的的回调，回调时设备未注册陷入死循环 \n        isACCAddress[_scAddress] = true;\n    }\n    \n    /// @dev addAttribute add additional attribute to the device\n    function addAttribute (\n        address _device,\n        string memory _attrName,\n        string memory _attrValue\n    )\n        public \n    {\n        require(lookupTable[_device].isValued, \"addAttribute error: Device not registered!\");\n        require (\n            msg.sender == lookupTable[_device].manager,\n            \"add Attribute error: Only manager can add attribute!\"\n        );\n        require(\n            !lookupTable[_device].customed[_attrName].isValued,\n            \"add Attribute error: Attribute already exist!\"\n        );\n        \n        lookupTable[_device].customed[_attrName].value = _attrValue;\n        lookupTable[_device].customed[_attrName].isValued = true;\n        rc.reputationCompute(msg.sender, false, 1, \"Attribute add\", block.timestamp);\n    }\n    \n    /// @dev updateManager update the manager of device\n    function updateManager (address _device, address _newManager) public {\n        require(lookupTable[_device].isValued, \"updateManager error: Device not registered!\");\n        require (\n            msg.sender == owner || msg.sender == lookupTable[_device].manager,\n            \"updateManager error: Only mc owner or device manager can update device manager!\"\n        );\n        lookupTable[_device].manager = _newManager;\n        rc.reputationCompute(msg.sender, false, 2, \"Device manager update\", block.timestamp);\n    }\n    \n    /// @dev updateAttribute update attribute of device\n    function updateAttribute (\n        address _device,\n        string memory _attrName,\n        string memory _attrValue\n    )\n        public \n    {\n        require(lookupTable[_device].isValued, \"updateAttribute error: Device not registered!\");\n        require (\n            msg.sender == lookupTable[_device].manager,\n            \"updateAttribute error: Only manager can update Attribute!\"\n        );\n        require(\n            lookupTable[_device].customed[_attrName].isValued,\n            \"updateAttribute error: Attribute not exist!\"\n        );\n        lookupTable[_device].customed[_attrName].value = _attrValue;\n        rc.reputationCompute(msg.sender, false, 2, \"Device customed attribute update\", block.timestamp);\n    }\n    \n    /// @dev updateTimeofUnblocked update the time of unblocked, \n    /// @notice this fucntion only can be call by reputation contract\n    function updateTimeofUnblocked(address _device, uint256 _timeofUnblocked) public {\n        require(\n            lookupTable[_device].isValued, \n            \"updateTimeofUnblocked error: Device not registered!\"\n        );\n        require(\n            msg.sender == rcc.scAddress, \n            \"updateTimeofUnblocked error: Only reputation contract can update time of unblock!\"\n        );\n        lookupTable[_device].timeofUnblocked = _timeofUnblocked;\n    }\n    \n    /// @dev get the fixed device attribute(type is string)\n    function getFixedAttribute (\n        address _device, \n        string memory _attrName\n    ) \n        public \n        view \n        returns (\n            string memory _attrValue\n        ) \n    {\n        require(lookupTable[_device].isValued, \"getFixedAttribute error: Device not registered!\");\n        require(\n            stringCompare(_attrName, \"deviceID\") || stringCompare(_attrName,\"deviceType\") || stringCompare(_attrName,\"deviceRole\"),\n            \"getFixedAttribute error: The attribute passed in is not a device fixed attribute!\"\n        );\n        if (stringCompare(_attrName, \"deviceID\")) {\n            return lookupTable[_device].deviceID;\n        }\n        if (stringCompare(_attrName,\"deviceType\")) {\n            return lookupTable[_device].deviceType;\n        } \n        if (stringCompare(_attrName,\"deviceRole\")) {\n            return lookupTable[_device].deviceRole;\n        }\n    }\n    \n    /// @dev get the fixed device attribute(type is address)\n    function getDeviceRelatedAddress(\n        address _device, \n        string memory _attrName\n    ) \n        public \n        view \n        returns (\n            address _attrValue\n        ) \n    {\n        require(lookupTable[_device].isValued, \"getDeviceRelatedAddress error: Device not registered!\");\n        if (stringCompare(_attrName, \"manager\")) {\n            return lookupTable[_device].manager;\n        }\n        if (stringCompare(_attrName, \"scAddress\")) {\n            return lookupTable[_device].scAddress;\n        }\n    }\n    \n    /// dev get the customed attribute\n    function getCustomedAttribute(\n        address _device, \n        string memory _attrName\n    ) \n        public \n        view \n        returns (\n            string memory _attrValue\n        ) \n    {\n        require(lookupTable[_device].isValued, \"getCustomedAttribute error: Device not registered!\");\n        require(\n            lookupTable[_device].customed[_attrName].isValued,\n            \"getCustomedAttribute error: Attribute not exist!\"\n        );\n        return lookupTable[_device].customed[_attrName].value;\n    }\n    \n    function getTimeofUnblocked(address _device) public view returns (uint256) {\n        require(lookupTable[_device].isValued, \"getTimeofUnblocked error: Device not registered!\");\n        return lookupTable[_device].timeofUnblocked;\n    }\n    \n    function isContractAddress(address _scAddress) public view returns (bool) {\n        return isACCAddress[_scAddress];\n    }\n    \n    /// @dev deleteDevice remove device from registered list\n    function deleteDevice(address _device) public {\n        require(lookupTable[_device].isValued, \"deleteDevice error: Device not registered!\");\n        require (\n            msg.sender == lookupTable[_device].manager,\n            \"deleteDevice error: Only manager can remove device!\"\n        );\n        delete lookupTable[_device];\n        delete isACCAddress[lookupTable[_device].scAddress];\n        rc.reputationCompute(msg.sender, false, 3, \"Device delete\", block.timestamp);\n    }\n    \n    /// @dev deleteAttribute delete customed attribute\n    function deleteAttribute(address _device, string memory _attrName) public {\n        require(lookupTable[_device].isValued, \"deleteAttribute error: device not exist!\");\n        require (\n            msg.sender == lookupTable[_device].manager,\n            \"deleteAttribute error: Only owner can delete attribute!\"\n        );\n        require (\n            lookupTable[_device].customed[_attrName].isValued,\n            \"deleteAttribute error: Attribute not exist!\"\n        );\n        delete lookupTable[_device].customed[_attrName];\n        rc.reputationCompute(msg.sender, false, 3, \"Attribute delete\", block.timestamp);\n    }\n\n    /// @dev stringCompare determine whether the strings are equal, using length + hash comparson to reduce gas consumption\n    function stringCompare(string memory a, string memory b) public pure returns (bool) {\n        bytes memory _a = bytes(a);\n        bytes memory _b = bytes(b);\n        if (_a.length != _b.length) {\n            return false;\n        } else {\n            if (_a.length == 1) {\n                return _a[0] == _b[0];\n            } else {\n                return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));\n            }\n        }\n    }\n}    \n\n\nabstract contract ReputationM {\n    function reputationCompute(\n        address _subject, \n        bool _ismisbehavior,\n        uint8 _behaviorID,\n        string memory _behavior,\n        uint256  _time\n    ) public virtual ;\n}",
+  "source": "// SPDX-License-Identifier:MIT\npragma solidity >0.6.0 <0.8.0;\n\n/// @title Manage smart contracts and device attributes\n/// @author shuzang\ncontract Management {\n    address public owner; // The ower of management contract \n    ReputationM public rc;\n    \n    struct RCContract {\n        bool isValued;       // for duplicate check\n        address creator;     // the peer(account) who created and deployed reputation contract\n        address scAddress;   // the address of the smart contract\n    }\n    \n    struct AttrValue {\n        bool isValued; // fro duplicate check\n        string value; // attribute value\n    }\n    \n    struct Device {\n        bool isValued;                      // for duplicate check\n        address manager;                    // the address of gateway which device belong to, for the gateway, is itself\n        address scAddress;                  // the address of access control contract associate with device\n        string  deviceID;                   // the UUID of device\n        string  deviceType;                 // device type, e.g. Loudness Sensor\n        string  deviceRole;                 // device role, e.g. validator, manager or device \n        uint256 timeofUnblocked;              // time when the resource is unblocked (0 if unblocked, otherwise, blocked)\n        mapping (string => AttrValue) customed;   // other attribute self customed, can have no element\n    }\n    \n    \n    /// Mapping is marked internal, and write own getter function\n    RCContract public rcc;\n    mapping(address => Device)  internal lookupTable;\n    mapping(address => bool) internal isACCAddress; // judge if a address is a access control contract address, used by Reputation contract\n    \n    \n    /// @dev Set contract deployer as owner\n    constructor() {\n        owner = msg.sender; // 'msg.sender' is sender of current call, contract deployer for a constructor\n    }\n    \n    /// @dev set reputation contract\n    function setRC(address  _rc, address _creator) public {\n        //duplicate unchecked\n        require(\n            !rcc.isValued,\n            \"setRC error: Reputation contract already exist!\"\n        );\n        \n        require(\n            msg.sender == owner || msg.sender == _creator,\n            \"setRC error: Only mc owner or rc creator can register!\"\n        );\n        \n        // register\n        rcc.creator = _creator;\n        rcc.scAddress = _rc;\n        rcc.isValued = true;\n        \n        // setting for contract calls\n        rc = ReputationM(_rc);\n    }\n    \n    /// @dev update the information (i.e., scAddress) of a registered reputation contract\n    function updateRC(address _rc) public {\n        require(rcc.isValued, \"Reputation contract not exist!\");\n        require(\n            msg.sender == owner || msg.sender == rcc.creator,\n            \"updateRC error: Only mc owner or rc creator can update rc!\"\n        );\n\n        rcc.scAddress = _rc;\n        rc = ReputationM(_rc);\n    }\n    \n    /// @dev deviceRegister register device attributes\n    function deviceRegister(\n        address _device,\n        address _manager,\n        address _scAddress,\n        string memory _deviceID,\n        string memory _deviceType,\n        string memory _deviceRole\n    )\n        public \n    {\n        require (\n            !lookupTable[_device].isValued,\n            \"deviceRegister error: device already registered\"\n        );\n        \n        require(\n            msg.sender == _manager,\n            \"deviceRegister error: Only manager of device can register!\"\n        );\n        \n        lookupTable[_device].manager = _manager;\n        lookupTable[_device].scAddress = _scAddress;\n        lookupTable[_device].deviceID = _deviceID;\n        lookupTable[_device].deviceType = _deviceType;\n        lookupTable[_device].deviceRole = _deviceRole;\n        lookupTable[_device].timeofUnblocked = 0;\n        lookupTable[_device].isValued = true;\n        //rc.reputationCompute(msg.sender, false, 1, \"Device register\", now ); //设备注册事件提交会触发阻塞时间更新的的回调，回调时设备未注册陷入死循环 \n        isACCAddress[_scAddress] = true;\n    }\n    \n    /// @dev addAttribute add additional attribute to the device\n    function addAttribute (\n        address _device,\n        string memory _attrName,\n        string memory _attrValue\n    )\n        public \n    {\n        require(lookupTable[_device].isValued, \"addAttribute error: Device not registered!\");\n        require (\n            msg.sender == lookupTable[_device].manager,\n            \"add Attribute error: Only manager can add attribute!\"\n        );\n        require(\n            !lookupTable[_device].customed[_attrName].isValued,\n            \"add Attribute error: Attribute already exist!\"\n        );\n        \n        lookupTable[_device].customed[_attrName].value = _attrValue;\n        lookupTable[_device].customed[_attrName].isValued = true;\n        rc.reputationCompute(msg.sender, false, 1, \"Attribute add\", block.timestamp);\n    }\n    \n    /// @dev updateManager update the manager of device\n    function updateManager (address _device, address _newManager) public {\n        require(lookupTable[_device].isValued, \"updateManager error: Device not registered!\");\n        require (\n            msg.sender == owner || msg.sender == lookupTable[_device].manager,\n            \"updateManager error: Only mc owner or device manager can update device manager!\"\n        );\n        lookupTable[_device].manager = _newManager;\n        rc.reputationCompute(msg.sender, false, 2, \"Device manager update\", block.timestamp);\n    }\n    \n    /// @dev updateAttribute update attribute of device\n    function updateAttribute (\n        address _device,\n        string memory _attrName,\n        string memory _attrValue\n    )\n        public \n    {\n        require(lookupTable[_device].isValued, \"updateAttribute error: Device not registered!\");\n        require (\n            msg.sender == lookupTable[_device].manager,\n            \"updateAttribute error: Only manager can update Attribute!\"\n        );\n        require(\n            lookupTable[_device].customed[_attrName].isValued,\n            \"updateAttribute error: Attribute not exist!\"\n        );\n        lookupTable[_device].customed[_attrName].value = _attrValue;\n        rc.reputationCompute(msg.sender, false, 2, \"Device customed attribute update\", block.timestamp);\n    }\n    \n    /// @dev updateTimeofUnblocked update the time of unblocked, \n    /// @notice this fucntion only can be call by reputation contract\n    function updateTimeofUnblocked(address _device, uint256 _timeofUnblocked) public {\n        require(\n            lookupTable[_device].isValued, \n            \"updateTimeofUnblocked error: Device not registered!\"\n        );\n        require(\n            msg.sender == rcc.scAddress, \n            \"updateTimeofUnblocked error: Only reputation contract can update time of unblock!\"\n        );\n        lookupTable[_device].timeofUnblocked = _timeofUnblocked;\n    }\n    \n    /// @dev get the fixed device attribute(type is string)\n    function getFixedAttribute (\n        address _device, \n        string memory _attrName\n    ) \n        public \n        view \n        returns (\n            string memory _attrValue\n        ) \n    {\n        require(lookupTable[_device].isValued, \"getFixedAttribute error: Device not registered!\");\n        require(\n            stringCompare(_attrName, \"deviceID\") || stringCompare(_attrName,\"deviceType\") || stringCompare(_attrName,\"deviceRole\"),\n            \"getFixedAttribute error: The attribute passed in is not a device fixed attribute!\"\n        );\n        if (stringCompare(_attrName, \"deviceID\")) {\n            return lookupTable[_device].deviceID;\n        }\n        if (stringCompare(_attrName,\"deviceType\")) {\n            return lookupTable[_device].deviceType;\n        } \n        if (stringCompare(_attrName,\"deviceRole\")) {\n            return lookupTable[_device].deviceRole;\n        }\n    }\n    \n    /// @dev get the fixed device attribute(type is address)\n    function getDeviceRelatedAddress(\n        address _device, \n        string memory _attrName\n    ) \n        public \n        view \n        returns (\n            address _attrValue\n        ) \n    {\n        require(lookupTable[_device].isValued, \"getDeviceRelatedAddress error: Device not registered!\");\n        if (stringCompare(_attrName, \"manager\")) {\n            return lookupTable[_device].manager;\n        }\n        if (stringCompare(_attrName, \"scAddress\")) {\n            return lookupTable[_device].scAddress;\n        }\n    }\n    \n    /// dev get the customed attribute\n    function getCustomedAttribute(\n        address _device, \n        string memory _attrName\n    ) \n        public \n        view \n        returns (\n            string memory _attrValue\n        ) \n    {\n        require(lookupTable[_device].isValued, \"getCustomedAttribute error: Device not registered!\");\n        require(\n            lookupTable[_device].customed[_attrName].isValued,\n            \"getCustomedAttribute error: Attribute not exist!\"\n        );\n        return lookupTable[_device].customed[_attrName].value;\n    }\n    \n    function getTimeofUnblocked(address _device) public view returns (uint256) {\n        require(lookupTable[_device].isValued, \"getTimeofUnblocked error: Device not registered!\");\n        return lookupTable[_device].timeofUnblocked;\n    }\n    \n    function isContractAddress(address _scAddress) public view returns (bool) {\n        return isACCAddress[_scAddress];\n    }\n    \n    /// @dev deleteDevice remove device from registered list\n    function deleteDevice(address _device) public {\n        require(lookupTable[_device].isValued, \"deleteDevice error: Device not registered!\");\n        require (\n            msg.sender == lookupTable[_device].manager,\n            \"deleteDevice error: Only manager can remove device!\"\n        );\n        delete isACCAddress[lookupTable[_device].scAddress];\n        delete lookupTable[_device];\n        rc.reputationCompute(msg.sender, false, 3, \"Device delete\", block.timestamp);\n    }\n    \n    /// @dev deleteAttribute delete customed attribute\n    function deleteAttribute(address _device, string memory _attrName) public {\n        require(lookupTable[_device].isValued, \"deleteAttribute error: device not exist!\");\n        require (\n            msg.sender == lookupTable[_device].manager,\n            \"deleteAttribute error: Only owner can delete attribute!\"\n        );\n        require (\n            lookupTable[_device].customed[_attrName].isValued,\n            \"deleteAttribute error: Attribute not exist!\"\n        );\n        delete lookupTable[_device].customed[_attrName];\n        rc.reputationCompute(msg.sender, false, 3, \"Attribute delete\", block.timestamp);\n    }\n\n    /// @dev stringCompare determine whether the strings are equal, using length + hash comparson to reduce gas consumption\n    function stringCompare(string memory a, string memory b) public pure returns (bool) {\n        bytes memory _a = bytes(a);\n        bytes memory _b = bytes(b);\n        if (_a.length != _b.length) {\n            return false;\n        } else {\n            if (_a.length == 1) {\n                return _a[0] == _b[0];\n            } else {\n                return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));\n            }\n        }\n    }\n}    \n\n\nabstract contract ReputationM {\n    function reputationCompute(\n        address _subject, \n        bool _ismisbehavior,\n        uint8 _behaviorID,\n        string memory _behavior,\n        uint256  _time\n    ) public virtual ;\n}",
   "sourcePath": "/home/shuzang/BBRAC-dev/contracts/Management.sol",
   "ast": {
     "absolutePath": "/home/shuzang/BBRAC-dev/contracts/Management.sol",
@@ -9188,7 +9188,7 @@
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 7367,
+                    "id": 7370,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -9196,31 +9196,74 @@
                     "nodeType": "UnaryOperation",
                     "operator": "delete",
                     "prefix": true,
-                    "src": "9852:27:2",
+                    "src": "9852:51:2",
                     "subExpression": {
                       "argumentTypes": null,
                       "baseExpression": {
                         "argumentTypes": null,
                         "id": 7364,
-                        "name": "lookupTable",
+                        "name": "isACCAddress",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 6740,
-                        "src": "9859:11:2",
+                        "referencedDeclaration": 6744,
+                        "src": "9859:12:2",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_mapping$_t_address_$_t_struct$_Device_$6733_storage_$",
-                          "typeString": "mapping(address => struct Management.Device storage ref)"
+                          "typeIdentifier": "t_mapping$_t_address_$_t_bool_$",
+                          "typeString": "mapping(address => bool)"
                         }
                       },
-                      "id": 7366,
+                      "id": 7369,
                       "indexExpression": {
                         "argumentTypes": null,
-                        "id": 7365,
-                        "name": "_device",
-                        "nodeType": "Identifier",
-                        "overloadedDeclarations": [],
-                        "referencedDeclaration": 7342,
-                        "src": "9871:7:2",
+                        "expression": {
+                          "argumentTypes": null,
+                          "baseExpression": {
+                            "argumentTypes": null,
+                            "id": 7365,
+                            "name": "lookupTable",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 6740,
+                            "src": "9872:11:2",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_Device_$6733_storage_$",
+                              "typeString": "mapping(address => struct Management.Device storage ref)"
+                            }
+                          },
+                          "id": 7367,
+                          "indexExpression": {
+                            "argumentTypes": null,
+                            "id": 7366,
+                            "name": "_device",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 7342,
+                            "src": "9884:7:2",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_address",
+                              "typeString": "address"
+                            }
+                          },
+                          "isConstant": false,
+                          "isLValue": true,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "nodeType": "IndexAccess",
+                          "src": "9872:20:2",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Device_$6733_storage",
+                            "typeString": "struct Management.Device storage ref"
+                          }
+                        },
+                        "id": 7368,
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "scAddress",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 6720,
+                        "src": "9872:30:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
                           "typeString": "address"
@@ -9231,10 +9274,10 @@
                       "isPure": false,
                       "lValueRequested": true,
                       "nodeType": "IndexAccess",
-                      "src": "9859:20:2",
+                      "src": "9859:44:2",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_struct$_Device_$6733_storage",
-                        "typeString": "struct Management.Device storage ref"
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
                       }
                     },
                     "typeDescriptions": {
@@ -9242,9 +9285,9 @@
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 7368,
+                  "id": 7371,
                   "nodeType": "ExpressionStatement",
-                  "src": "9852:27:2"
+                  "src": "9852:51:2"
                 },
                 {
                   "expression": {
@@ -9257,74 +9300,31 @@
                     "nodeType": "UnaryOperation",
                     "operator": "delete",
                     "prefix": true,
-                    "src": "9889:51:2",
+                    "src": "9913:27:2",
                     "subExpression": {
                       "argumentTypes": null,
                       "baseExpression": {
                         "argumentTypes": null,
-                        "id": 7369,
-                        "name": "isACCAddress",
+                        "id": 7372,
+                        "name": "lookupTable",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 6744,
-                        "src": "9896:12:2",
+                        "referencedDeclaration": 6740,
+                        "src": "9920:11:2",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_mapping$_t_address_$_t_bool_$",
-                          "typeString": "mapping(address => bool)"
+                          "typeIdentifier": "t_mapping$_t_address_$_t_struct$_Device_$6733_storage_$",
+                          "typeString": "mapping(address => struct Management.Device storage ref)"
                         }
                       },
                       "id": 7374,
                       "indexExpression": {
                         "argumentTypes": null,
-                        "expression": {
-                          "argumentTypes": null,
-                          "baseExpression": {
-                            "argumentTypes": null,
-                            "id": 7370,
-                            "name": "lookupTable",
-                            "nodeType": "Identifier",
-                            "overloadedDeclarations": [],
-                            "referencedDeclaration": 6740,
-                            "src": "9909:11:2",
-                            "typeDescriptions": {
-                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_Device_$6733_storage_$",
-                              "typeString": "mapping(address => struct Management.Device storage ref)"
-                            }
-                          },
-                          "id": 7372,
-                          "indexExpression": {
-                            "argumentTypes": null,
-                            "id": 7371,
-                            "name": "_device",
-                            "nodeType": "Identifier",
-                            "overloadedDeclarations": [],
-                            "referencedDeclaration": 7342,
-                            "src": "9921:7:2",
-                            "typeDescriptions": {
-                              "typeIdentifier": "t_address",
-                              "typeString": "address"
-                            }
-                          },
-                          "isConstant": false,
-                          "isLValue": true,
-                          "isPure": false,
-                          "lValueRequested": false,
-                          "nodeType": "IndexAccess",
-                          "src": "9909:20:2",
-                          "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_Device_$6733_storage",
-                            "typeString": "struct Management.Device storage ref"
-                          }
-                        },
                         "id": 7373,
-                        "isConstant": false,
-                        "isLValue": true,
-                        "isPure": false,
-                        "lValueRequested": false,
-                        "memberName": "scAddress",
-                        "nodeType": "MemberAccess",
-                        "referencedDeclaration": 6720,
-                        "src": "9909:30:2",
+                        "name": "_device",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 7342,
+                        "src": "9932:7:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
                           "typeString": "address"
@@ -9335,10 +9335,10 @@
                       "isPure": false,
                       "lValueRequested": true,
                       "nodeType": "IndexAccess",
-                      "src": "9896:44:2",
+                      "src": "9920:20:2",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_bool",
-                        "typeString": "bool"
+                        "typeIdentifier": "t_struct$_Device_$6733_storage",
+                        "typeString": "struct Management.Device storage ref"
                       }
                     },
                     "typeDescriptions": {
@@ -9348,7 +9348,7 @@
                   },
                   "id": 7376,
                   "nodeType": "ExpressionStatement",
-                  "src": "9889:51:2"
+                  "src": "9913:27:2"
                 },
                 {
                   "expression": {
@@ -20664,7 +20664,7 @@
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 7367,
+                    "id": 7370,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -20672,31 +20672,74 @@
                     "nodeType": "UnaryOperation",
                     "operator": "delete",
                     "prefix": true,
-                    "src": "9852:27:2",
+                    "src": "9852:51:2",
                     "subExpression": {
                       "argumentTypes": null,
                       "baseExpression": {
                         "argumentTypes": null,
                         "id": 7364,
-                        "name": "lookupTable",
+                        "name": "isACCAddress",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 6740,
-                        "src": "9859:11:2",
+                        "referencedDeclaration": 6744,
+                        "src": "9859:12:2",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_mapping$_t_address_$_t_struct$_Device_$6733_storage_$",
-                          "typeString": "mapping(address => struct Management.Device storage ref)"
+                          "typeIdentifier": "t_mapping$_t_address_$_t_bool_$",
+                          "typeString": "mapping(address => bool)"
                         }
                       },
-                      "id": 7366,
+                      "id": 7369,
                       "indexExpression": {
                         "argumentTypes": null,
-                        "id": 7365,
-                        "name": "_device",
-                        "nodeType": "Identifier",
-                        "overloadedDeclarations": [],
-                        "referencedDeclaration": 7342,
-                        "src": "9871:7:2",
+                        "expression": {
+                          "argumentTypes": null,
+                          "baseExpression": {
+                            "argumentTypes": null,
+                            "id": 7365,
+                            "name": "lookupTable",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 6740,
+                            "src": "9872:11:2",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_Device_$6733_storage_$",
+                              "typeString": "mapping(address => struct Management.Device storage ref)"
+                            }
+                          },
+                          "id": 7367,
+                          "indexExpression": {
+                            "argumentTypes": null,
+                            "id": 7366,
+                            "name": "_device",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 7342,
+                            "src": "9884:7:2",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_address",
+                              "typeString": "address"
+                            }
+                          },
+                          "isConstant": false,
+                          "isLValue": true,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "nodeType": "IndexAccess",
+                          "src": "9872:20:2",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Device_$6733_storage",
+                            "typeString": "struct Management.Device storage ref"
+                          }
+                        },
+                        "id": 7368,
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "scAddress",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 6720,
+                        "src": "9872:30:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
                           "typeString": "address"
@@ -20707,10 +20750,10 @@
                       "isPure": false,
                       "lValueRequested": true,
                       "nodeType": "IndexAccess",
-                      "src": "9859:20:2",
+                      "src": "9859:44:2",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_struct$_Device_$6733_storage",
-                        "typeString": "struct Management.Device storage ref"
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
                       }
                     },
                     "typeDescriptions": {
@@ -20718,9 +20761,9 @@
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 7368,
+                  "id": 7371,
                   "nodeType": "ExpressionStatement",
-                  "src": "9852:27:2"
+                  "src": "9852:51:2"
                 },
                 {
                   "expression": {
@@ -20733,74 +20776,31 @@
                     "nodeType": "UnaryOperation",
                     "operator": "delete",
                     "prefix": true,
-                    "src": "9889:51:2",
+                    "src": "9913:27:2",
                     "subExpression": {
                       "argumentTypes": null,
                       "baseExpression": {
                         "argumentTypes": null,
-                        "id": 7369,
-                        "name": "isACCAddress",
+                        "id": 7372,
+                        "name": "lookupTable",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 6744,
-                        "src": "9896:12:2",
+                        "referencedDeclaration": 6740,
+                        "src": "9920:11:2",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_mapping$_t_address_$_t_bool_$",
-                          "typeString": "mapping(address => bool)"
+                          "typeIdentifier": "t_mapping$_t_address_$_t_struct$_Device_$6733_storage_$",
+                          "typeString": "mapping(address => struct Management.Device storage ref)"
                         }
                       },
                       "id": 7374,
                       "indexExpression": {
                         "argumentTypes": null,
-                        "expression": {
-                          "argumentTypes": null,
-                          "baseExpression": {
-                            "argumentTypes": null,
-                            "id": 7370,
-                            "name": "lookupTable",
-                            "nodeType": "Identifier",
-                            "overloadedDeclarations": [],
-                            "referencedDeclaration": 6740,
-                            "src": "9909:11:2",
-                            "typeDescriptions": {
-                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_Device_$6733_storage_$",
-                              "typeString": "mapping(address => struct Management.Device storage ref)"
-                            }
-                          },
-                          "id": 7372,
-                          "indexExpression": {
-                            "argumentTypes": null,
-                            "id": 7371,
-                            "name": "_device",
-                            "nodeType": "Identifier",
-                            "overloadedDeclarations": [],
-                            "referencedDeclaration": 7342,
-                            "src": "9921:7:2",
-                            "typeDescriptions": {
-                              "typeIdentifier": "t_address",
-                              "typeString": "address"
-                            }
-                          },
-                          "isConstant": false,
-                          "isLValue": true,
-                          "isPure": false,
-                          "lValueRequested": false,
-                          "nodeType": "IndexAccess",
-                          "src": "9909:20:2",
-                          "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_Device_$6733_storage",
-                            "typeString": "struct Management.Device storage ref"
-                          }
-                        },
                         "id": 7373,
-                        "isConstant": false,
-                        "isLValue": true,
-                        "isPure": false,
-                        "lValueRequested": false,
-                        "memberName": "scAddress",
-                        "nodeType": "MemberAccess",
-                        "referencedDeclaration": 6720,
-                        "src": "9909:30:2",
+                        "name": "_device",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 7342,
+                        "src": "9932:7:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
                           "typeString": "address"
@@ -20811,10 +20811,10 @@
                       "isPure": false,
                       "lValueRequested": true,
                       "nodeType": "IndexAccess",
-                      "src": "9896:44:2",
+                      "src": "9920:20:2",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_bool",
-                        "typeString": "bool"
+                        "typeIdentifier": "t_struct$_Device_$6733_storage",
+                        "typeString": "struct Management.Device storage ref"
                       }
                     },
                     "typeDescriptions": {
@@ -20824,7 +20824,7 @@
                   },
                   "id": 7376,
                   "nodeType": "ExpressionStatement",
-                  "src": "9889:51:2"
+                  "src": "9913:27:2"
                 },
                 {
                   "expression": {
@@ -23001,7 +23001,7 @@
   },
   "networks": {},
   "schemaVersion": "3.3.1",
-  "updatedAt": "2020-11-03T02:35:36.136Z",
+  "updatedAt": "2020-11-04T11:53:09.026Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},
