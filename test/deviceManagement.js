@@ -1,5 +1,5 @@
 // Note: Even we successfully deployed the contract with $ truffle migrate --reset, we still need to reset every time when start testrpc. 
-const Management = artifacts.require("Management")
+const Management = artifacts.require("Management");
 
 contract("Management", async accounts => {
     let account_one = accounts[0]
@@ -76,9 +76,8 @@ contract("Management", async accounts => {
     });
 
 
-    it("should remove device from gegistered list", async () => {
-        let instance = await Management.deployed();
-
-        await instance.deleteDevice(account_one, {from:account_two});
-    })
+    // it("should remove device from gegistered list", async () => {
+    //     let instance = await Management.deployed();
+    //     await instance.deleteDevice(account_one, {from:account_two});
+    // })
 })
