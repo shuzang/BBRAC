@@ -47,6 +47,30 @@ module.exports = {
       port: 7545,
       network_id: 5777,
     },
+    
+    // quourm_node1 for MC and RC management
+    quorum_node1: {
+      host: "127.0.0.1",
+      port: 22000,
+      network_id: "*",
+      type: "quorum",
+    },
+
+    // quourm_node2 for requester
+    quorum_node2: {
+      host: "127.0.0.1",
+      port: 22001,
+      network_id: "*",
+      type: "quourm",
+    },
+
+    // quourm_node3 for requested
+    quorum_node3: {
+      host: "127.0.0.1",
+      port: 22002,
+      network_id: "*",
+      type: "quorum",
+    },
     // development: {
     //  host: "127.0.0.1",     // Localhost (default: none)
     //  port: 8545,            // Standard Ethereum port (default: none)
