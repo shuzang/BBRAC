@@ -134,7 +134,7 @@ contract Reputation {
         // calculate positive impact part
         uint legLen = behaviorsLookup[_subject].LegalBehaviors.length - behaviorsLookup[_subject].begin;
         for (uint i = behaviorsLookup[_subject].begin; i < behaviorsLookup[_subject].LegalBehaviors.length; i++) {
-            bytes16 wi = behaviorsLookup[_subject].MisBehaviors[i].currentWeight; 
+            bytes16 wi = behaviorsLookup[_subject].LegalBehaviors[i].currentWeight; 
             bytes16 g = exp(evAttr.gamma, legLen-i);
             CrP = ABDKMathQuad.add(
                 CrP,
