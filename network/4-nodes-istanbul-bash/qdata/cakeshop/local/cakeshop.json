@@ -1,0 +1,22 @@
+[
+  {
+    "name": "node1",
+    "rpcUrl": "http://localhost:22000",
+    "transactionManagerUrl": ""
+  },
+  {
+    "name": "node2",
+    "rpcUrl": "http://localhost:22001",
+    "transactionManagerUrl": ""
+  },
+  {
+    "name": "node3",
+    "rpcUrl": "http://localhost:22002",
+    "transactionManagerUrl": ""
+  },
+  {
+    "name": "node4",
+    "rpcUrl": "http://localhost:22003",
+    "transactionManagerUrl": ""
+  }
+]
