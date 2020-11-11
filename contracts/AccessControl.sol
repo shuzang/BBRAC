@@ -356,7 +356,7 @@ contract AccessControl {
             policycheck = false;
         }
         
-        if (policycheck && !behaviorcheck && errcode == 0) errcode = 1; // Static check failed!
+        if (policycheck && !behaviorcheck && (errcode != 4)) errcode = 1; // Static check failed!
         if (!policycheck && behaviorcheck) errcode = 2; // Misbehavior detected!
         if (policycheck && behaviorcheck) errcode = 3; // Static check failed and Misbehavior detected
         
@@ -376,13 +376,13 @@ contract AccessControl {
         }
         
         if (errcode == 1) {
-            rc.reputationCompute(subject, true, 1, "Too frequent access", block.timestamp);
-            emit ReturnAccessResult(subject, false, "Too frequent access", block.timestamp);
+            rc.reputationCompute(subject, true, 1, "Policy check failed", block.timestamp);
+            emit ReturnAccessResult(subject, false, "Policy check failed", block.timestamp);
         }
         
         if (errcode == 2) {
-            rc.reputationCompute(subject, true, 2, "Policy check failed", block.timestamp);
-            emit ReturnAccessResult(subject, false, "Policy check failed", block.timestamp);
+            rc.reputationCompute(subject, true, 2, "Too frequent access", block.timestamp);
+            emit ReturnAccessResult(subject, false, "Too frequent access", block.timestamp);
         }
         
         if (errcode == 3) {
