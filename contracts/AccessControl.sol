@@ -39,7 +39,7 @@ contract AccessControl {
         uint256 NoFR; //Number of frequent Requests in a short period of time
     }
 
-    Environment public evAttr = Environment(100, 2, "denyoverries");
+    Environment public evAttr = Environment(100, 2, "denyoverrides");
 
     // mapping subjcetAddress => BehaviorCriteria for behavior check
     mapping(address => BehaviorItem) internal behaviors;
