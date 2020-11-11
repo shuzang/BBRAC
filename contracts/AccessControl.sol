@@ -287,7 +287,7 @@ contract AccessControl {
     function accessControl(string memory _resource, string memory _action) public returns (string memory) {
         address subject = msg.sender;
         require (
-            mc.getTimeofUnblock(subject) >= block.timestamp,
+            mc.getTimeofUnblocked(subject) < block.timestamp,
             "access error: Device is still blocked!"
         );
         
@@ -430,7 +430,7 @@ abstract contract ReputationA {
 
 
 abstract contract ManagementA {
-    function getTimeofUnblock(address _device)  public virtual returns (uint256);
+    function getTimeofUnblocked(address _device)  public virtual returns (uint256);
 
     function getFixedAttribute (
         address _device, 
