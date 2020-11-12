@@ -535,7 +535,7 @@ myACC.methods.accessControl("GPS", "read").send({
 	gasPrice: 0
 }).then(function(receipt){
 	if (receipt.status) {
-		console.log("send access success!")
+	    //console.log("send access success!")
 	    process.exit(0);
 	}
 })
