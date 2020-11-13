@@ -530,15 +530,19 @@ var myACC = new web3.eth.Contract(accAbi, accAddr);
 
 
 myACC.methods.accessControl("GPS", "read").send({
-	from: "0xeeBFCA7A2951CCFf05DD98DC0F3f1fe180baDE2e",
+	from: "0xcA843569e3427144cEad5e4d5999a3D0cCF92B8e",
 	gas: 10000000,
 	gasPrice: 0
-}).then(function(receipt){
-	if (receipt.status) {
-	    //console.log("send access success!")
-	    process.exit(0);
+}).on('receipt', function(receipt) {
+	if(receipt.status) {
+		console.log("access failed!")
 	}
+}).on('error',function(error,receipt) {
+	console.log("EVM revert");
 })
+
+process.exit(0);
+
 
 
 
