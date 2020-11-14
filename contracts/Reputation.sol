@@ -22,7 +22,7 @@ contract Reputation {
         uint8 behaviorID;
         string behavior;
         uint  time;
-        bytes16 currentWeight;
+        uint currentWeight;
     }
     
     struct Behaviors {
@@ -33,8 +33,8 @@ contract Reputation {
     }
     
     struct Environment {
-        bytes16[4] omega; 
-        bytes16[4] alpha; // penalty factor, index 2,4 is policy action, index 1 is large number of requests in a short time
+        uint[4] omega; 
+        uint[4] alpha; // penalty factor, index 2,4 is policy action, index 1 is large number of requests in a short time
         bytes16[2] lambda; // weight of CrP and CrN
         bytes16 CrPmax;
         bytes16 gamma; // forgetting factor
@@ -55,28 +55,32 @@ contract Reputation {
     
     /// @dev updateEnvironment update parameters of reputation function
     /// @notice real input value is value/base, e.g. 0.1 = 1/10, 0.25 = 25/100
-    function updateEnvironment(string memory _name, uint256 index, int value, int base) public {
+    function updateEnvironment(string memory _name, uint256 index, uint value, uint base) public {
         require(
             msg.sender == owner,
             "updateEnvironment error: Only owner can update environment factors!"
         );
+        require(
+             base != 0,
+             "param error: divisor can't be 0!"
+        );
         bytes16 input = ABDKMathQuad.div(
-            ABDKMathQuad.fromInt(value),
-            ABDKMathQuad.fromInt(base)
+            ABDKMathQuad.fromUInt(value),
+            ABDKMathQuad.fromUInt(base)
         );
         if (stringCompare(_name, "omega")) {
             require(
                 index >= 0 && index < 4,
                 "updateEnvironment error: parameter array overflow"
             );
-            evAttr.omega[index] = input;
+            evAttr.omega[index] = value;
         }
         if (stringCompare(_name, "alpha")) {
             require(
                 index >= 0 && index < 4,
                 "updateEnvironment error: parameter array overflow"
             );
-            evAttr.alpha[index] = input;
+            evAttr.alpha[index] = value;
         }
         if (stringCompare(_name, "lambda")) {
             require(
@@ -115,37 +119,37 @@ contract Reputation {
         
         if (_ismisbehavior) {
             behaviorsLookup[_subject].MisBehaviors.push(BehaviorRecord(_behaviorID, _behavior, _time, evAttr.alpha[_behaviorID-1]));
+            // calculate negative impact part
+            uint misLen = behaviorsLookup[_subject].MisBehaviors.length;
+            for (uint i = 0; i < misLen; i++) {
+                uint wi = behaviorsLookup[_subject].MisBehaviors[i].currentWeight; 
+                CrN = ABDKMathQuad.add(
+                    CrN,
+                    ABDKMathQuad.div(
+                        ABDKMathQuad.fromUInt(wi), 
+                        ABDKMathQuad.fromUInt(misLen-i)
+                    )
+                );           
+            }
+            CrN = ABDKMathQuad.neg(ABDKMathQuad.mul(CrN, ABDKMathQuad.fromUInt(misLen)));
         } else {
             behaviorsLookup[_subject].LegalBehaviors.push(BehaviorRecord(_behaviorID, _behavior, _time, evAttr.omega[_behaviorID-1]));
+            // calculate positive impact part
+            uint legLen = behaviorsLookup[_subject].LegalBehaviors.length - behaviorsLookup[_subject].begin;
+            for (uint i = behaviorsLookup[_subject].begin; i < behaviorsLookup[_subject].LegalBehaviors.length; i++) {
+                uint wi = behaviorsLookup[_subject].LegalBehaviors[i].currentWeight; 
+                bytes16 g = exp(evAttr.gamma, legLen-i);
+                CrP = ABDKMathQuad.add(
+                    CrP,
+                    ABDKMathQuad.mul(ABDKMathQuad.fromUInt(wi), g)
+                );
+            }
+            CrP = ABDKMathQuad.div(CrP,ABDKMathQuad.fromUInt(legLen));
+            if (ABDKMathQuad.cmp(evAttr.CrPmax, CrP) == -1) {
+                CrP = evAttr.CrPmax;
+            }
         }
         
-        // calculate negative impact part
-        uint misLen = behaviorsLookup[_subject].MisBehaviors.length;
-        for (uint i = 0; i < misLen; i++) {
-            bytes16 wi = behaviorsLookup[_subject].MisBehaviors[i].currentWeight; 
-            CrN = ABDKMathQuad.add(
-                CrN,
-                ABDKMathQuad.div(wi, ABDKMathQuad.fromUInt(misLen-i))
-            );           
-        }
-        CrN = ABDKMathQuad.neg(ABDKMathQuad.mul(CrN, ABDKMathQuad.fromUInt(misLen)));
-
-        
-        // calculate positive impact part
-        uint legLen = behaviorsLookup[_subject].LegalBehaviors.length - behaviorsLookup[_subject].begin;
-        for (uint i = behaviorsLookup[_subject].begin; i < behaviorsLookup[_subject].LegalBehaviors.length; i++) {
-            bytes16 wi = behaviorsLookup[_subject].LegalBehaviors[i].currentWeight; 
-            bytes16 g = exp(evAttr.gamma, legLen-i);
-            CrP = ABDKMathQuad.add(
-                CrP,
-                ABDKMathQuad.mul(wi, g)
-            );
-        }
-        CrP = ABDKMathQuad.div(CrP,ABDKMathQuad.fromUInt(legLen));
-        if (ABDKMathQuad.cmp(evAttr.CrPmax, CrP) == -1) {
-            CrP = evAttr.CrPmax;
-        }
-
         // calculate credit
         int credit = ABDKMathQuad.toInt(ABDKMathQuad.add(
             ABDKMathQuad.mul(evAttr.lambda[0], CrP),
@@ -195,14 +199,14 @@ contract Reputation {
     
     /// @dev initEnvironment initial parameters of reputation function
     function initEnvironment() internal {
-        evAttr.alpha[0] = 0x3ffc9999999999999999999999999999; // 0.2 
-        evAttr.alpha[1] = 0x3ffd3333333333333333333333333333; // 0.3
-        evAttr.alpha[2] = 0x3ffe0000000000000000000000000000; // 0.5
-        evAttr.alpha[3] = 0x3ffd9999999999999999999999999999; // 0.4
-        evAttr.omega[0] = 0x3ffb9999999999999999999999999999; // 0.1
-        evAttr.omega[1] = 0x3ffb9999999999999999999999999999; // 0.1
-        evAttr.omega[2] = 0x3ffb9999999999999999999999999999; // 0.1
-        evAttr.omega[3] = 0x3ffc9999999999999999999999999999; // 0.1
+        evAttr.alpha[0] = 20; // 0.2 
+        evAttr.alpha[1] = 30; // 0.3
+        evAttr.alpha[2] = 50; // 0.5
+        evAttr.alpha[3] = 40; // 0.4
+        evAttr.omega[0] = 10; // 0.1
+        evAttr.omega[1] = 10; // 0.1
+        evAttr.omega[2] = 10; // 0.1
+        evAttr.omega[3] = 10; // 0.1
         evAttr.lambda[0] = 0x3ffe0000000000000000000000000000; // 0.5
         evAttr.lambda[1] = 0x3ffe0000000000000000000000000000; // 0.5
         evAttr.CrPmax = 0x4003e000000000000000000000000000; // 30
