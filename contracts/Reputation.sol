@@ -29,15 +29,15 @@ contract Reputation {
         BehaviorRecord[] LegalBehaviors;
         BehaviorRecord[] MisBehaviors;
         uint begin; // begin index of legalBehaviors, when misbehaviors compute, this field recalculate
-        uint TimeofUnblock; //End time of blocked (0 if unblocked, otherwise, blocked)
+        uint TimeofUnblocked; //End time of blocked (0 if unblocked, otherwise, blocked)
     }
     
     struct Environment {
         uint[4] omega; 
         uint[4] alpha; // penalty factor, index 2,4 is policy action, index 1 is large number of requests in a short time
         bytes16[2] lambda; // weight of CrP and CrN
-        bytes16 CrPmax;
-        bytes16 gamma; // forgetting factor
+        uint CrPmax;
+        //bytes16 gamma; // forgetting factor
     }
 
     // mapping devie address => Behavior recort for reputation compute
@@ -90,10 +90,7 @@ contract Reputation {
             evAttr.lambda[index] = input;
         }
         if (stringCompare(_name, "CrPmax")) {
-            evAttr.CrPmax = input;
-        }
-        if (stringCompare(_name, "gamma")) {
-            evAttr.gamma = input;
+            evAttr.CrPmax = value;
         }
     }
 
@@ -113,59 +110,51 @@ contract Reputation {
             "reputationCompute error: only acc or mc can call function!"
         );
         
-        bytes16 CrN;
-        bytes16 CrP;
-        uint Tblocked;
-        
         if (_ismisbehavior) {
             behaviorsLookup[_subject].MisBehaviors.push(BehaviorRecord(_behaviorID, _behavior, _time, evAttr.alpha[_behaviorID-1]));
-            // calculate negative impact part
-            uint misLen = behaviorsLookup[_subject].MisBehaviors.length;
-            for (uint i = 0; i < misLen; i++) {
-                uint wi = behaviorsLookup[_subject].MisBehaviors[i].currentWeight; 
-                CrN = ABDKMathQuad.add(
-                    CrN,
-                    ABDKMathQuad.div(
-                        ABDKMathQuad.fromUInt(wi), 
-                        ABDKMathQuad.fromUInt(misLen-i)
-                    )
-                );           
-            }
-            CrN = ABDKMathQuad.neg(ABDKMathQuad.mul(CrN, ABDKMathQuad.fromUInt(misLen)));
         } else {
             behaviorsLookup[_subject].LegalBehaviors.push(BehaviorRecord(_behaviorID, _behavior, _time, evAttr.omega[_behaviorID-1]));
-            // calculate positive impact part
-            uint legLen = behaviorsLookup[_subject].LegalBehaviors.length - behaviorsLookup[_subject].begin;
-            for (uint i = behaviorsLookup[_subject].begin; i < behaviorsLookup[_subject].LegalBehaviors.length; i++) {
-                uint wi = behaviorsLookup[_subject].LegalBehaviors[i].currentWeight; 
-                bytes16 g = exp(evAttr.gamma, legLen-i);
-                CrP = ABDKMathQuad.add(
-                    CrP,
-                    ABDKMathQuad.mul(ABDKMathQuad.fromUInt(wi), g)
-                );
-            }
-            CrP = ABDKMathQuad.div(CrP,ABDKMathQuad.fromUInt(legLen));
-            if (ABDKMathQuad.cmp(evAttr.CrPmax, CrP) == -1) {
-                CrP = evAttr.CrPmax;
-            }
+        }
+
+        // calculate negative impact part
+        bytes16 CrN;
+        uint misLen = behaviorsLookup[_subject].MisBehaviors.length;
+        for (uint i = 0; i < misLen; i++) {
+            uint wi = behaviorsLookup[_subject].MisBehaviors[i].currentWeight; 
+            CrN = ABDKMathQuad.add(
+                CrN,
+                ABDKMathQuad.div(
+                    ABDKMathQuad.fromUInt(wi), 
+                    ABDKMathQuad.fromUInt(misLen-i)
+                )
+            );           
+        }
+
+        // calculate positive impact part
+        uint CrP;
+        for (uint i = behaviorsLookup[_subject].begin; i < behaviorsLookup[_subject].LegalBehaviors.length; i++) {
+            CrP = CrP + behaviorsLookup[_subject].LegalBehaviors[i].currentWeight; 
+        }
+        if (CrP > evAttr.CrPmax) {
+            CrP = evAttr.CrPmax;
         }
         
         // calculate credit
-        int credit = ABDKMathQuad.toInt(ABDKMathQuad.add(
-            ABDKMathQuad.mul(evAttr.lambda[0], CrP),
+        int credit = ABDKMathQuad.toInt(ABDKMathQuad.sub(
+            ABDKMathQuad.mul(evAttr.lambda[0], ABDKMathQuad.fromUInt(CrP)),
             ABDKMathQuad.mul(evAttr.lambda[1], CrN))
         );
 
         // calculate penalty
-        if ((block.timestamp > behaviorsLookup[_subject].TimeofUnblock) && (credit < 0)) {
+        uint Tblocked;
+        if ((block.timestamp > behaviorsLookup[_subject].TimeofUnblocked) && (credit < 0)) {
             if (behaviorsLookup[_subject].LegalBehaviors.length > behaviorsLookup[_subject].begin) {
                 behaviorsLookup[_subject].begin = behaviorsLookup[_subject].LegalBehaviors.length-1;
             }
-            bytes16 intCredit = ABDKMathQuad.neg(ABDKMathQuad.fromInt(credit));
-            Tblocked = uint(ABDKMathQuad.toInt(ABDKMathQuad.pow_2(intCredit)));
+            Tblocked = 2**uint(credit * -1);
             // update unblocked time
-            behaviorsLookup[_subject].TimeofUnblock = block.timestamp + Tblocked;
-            mc.updateTimeofUnblocked(_subject, behaviorsLookup[_subject].TimeofUnblock);
+            behaviorsLookup[_subject].TimeofUnblocked = block.timestamp + Tblocked;
+            mc.updateTimeofUnblocked(_subject, behaviorsLookup[_subject].TimeofUnblocked);
         }
         
         emit isCalled(_subject, _ismisbehavior, _behavior, _time, credit, Tblocked);
@@ -202,18 +191,18 @@ contract Reputation {
     
     /// @dev initEnvironment initial parameters of reputation function
     function initEnvironment() internal {
-        evAttr.alpha[0] = 20; // 0.2 
-        evAttr.alpha[1] = 30; // 0.3
-        evAttr.alpha[2] = 50; // 0.5
-        evAttr.alpha[3] = 40; // 0.4
+        evAttr.alpha[0] = 5; // 0.2 
+        evAttr.alpha[1] = 10; // 0.3
+        evAttr.alpha[2] = 15; // 0.5
+        evAttr.alpha[3] = 12; // 0.4
         evAttr.omega[0] = 10; // 0.1
         evAttr.omega[1] = 10; // 0.1
         evAttr.omega[2] = 10; // 0.1
         evAttr.omega[3] = 10; // 0.1
         evAttr.lambda[0] = 0x3ffe0000000000000000000000000000; // 0.5
         evAttr.lambda[1] = 0x3ffe0000000000000000000000000000; // 0.5
-        evAttr.CrPmax = 0x4003e000000000000000000000000000; // 30
-        evAttr.gamma = 0x3ffd3333333333333333333333333333; // 0.3
+        evAttr.CrPmax = 30; // 30
+        //evAttr.gamma = 0x3ffd3333333333333333333333333333; // 0.3
     }
 
     /// @dev stringCompare determine whether the strings are equal, using length + hash comparson to reduce gas consumption
@@ -232,13 +221,13 @@ contract Reputation {
     }
 
     /// @dev exp calculate base^expo, and return the result as a quadruple precision floating point number.
-    function exp(bytes16 base, uint expo) public pure returns (bytes16) {
-        bytes16 res;
-        for (uint i = 0; i < expo; i++) {
-            res = ABDKMathQuad.mul(res, base);
-        }
-        return res;
-    }
+    // function exp(bytes16 base, uint expo) public pure returns (bytes16) {
+    //     bytes16 res;
+    //     for (uint i = 0; i < expo; i++) {
+    //         res = ABDKMathQuad.mul(res, base);
+    //     }
+    //     return res;
+    // }
 
 }
 
