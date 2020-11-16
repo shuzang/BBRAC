@@ -158,11 +158,14 @@ contract Reputation {
 
         // calculate penalty
         if ((block.timestamp > behaviorsLookup[_subject].TimeofUnblock) && (credit < 0)) {
-            behaviorsLookup[_subject].begin = behaviorsLookup[_subject].LegalBehaviors.length-1;
-            Tblocked = uint(ABDKMathQuad.toInt(ABDKMathQuad.pow_2(ABDKMathQuad.fromInt(credit))));
+            if (behaviorsLookup[_subject].LegalBehaviors.length > behaviorsLookup[_subject].begin) {
+                behaviorsLookup[_subject].begin = behaviorsLookup[_subject].LegalBehaviors.length-1;
+            }
+            bytes16 intCredit = ABDKMathQuad.neg(ABDKMathQuad.fromInt(credit));
+            Tblocked = uint(ABDKMathQuad.toInt(ABDKMathQuad.pow_2(intCredit)));
             // update unblocked time
             behaviorsLookup[_subject].TimeofUnblock = block.timestamp + Tblocked;
-            mc.updateTimeofUnblock(_subject, behaviorsLookup[_subject].TimeofUnblock);
+            mc.updateTimeofUnblocked(_subject, behaviorsLookup[_subject].TimeofUnblock);
         }
         
         emit isCalled(_subject, _ismisbehavior, _behavior, _time, credit, Tblocked);
@@ -189,7 +192,7 @@ contract Reputation {
             _behavior = behaviorsLookup[_requester].LegalBehaviors[latest].behavior;
             _time = behaviorsLookup[_requester].LegalBehaviors[latest].time;
         } else {
-            require(behaviorsLookup[_requester].MisBehaviors.length >= 0, "There is currently no misbehavior");
+            require(behaviorsLookup[_requester].MisBehaviors.length > 0, "There is currently no misbehavior");
             latest = behaviorsLookup[_requester].MisBehaviors.length - 1;
             _behaviorID = behaviorsLookup[_requester].MisBehaviors[latest].behaviorID;
             _behavior = behaviorsLookup[_requester].MisBehaviors[latest].behavior;
@@ -241,6 +244,6 @@ contract Reputation {
 
 
 abstract contract ManagementR {
-    function updateTimeofUnblock(address _device, uint256 _TimeofUnblock) virtual public;
+    function updateTimeofUnblocked(address _device, uint256 _TimeofUnblock) virtual public;
     function isContractAddress(address _scAddress) virtual public view returns (bool);
 }
