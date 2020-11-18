@@ -74,7 +74,7 @@ var rcAbi = [
 			},
 			{
 				"internalType": "uint256",
-				"name": "TimeofUnblock",
+				"name": "TimeofUnblocked",
 				"type": "uint256"
 			}
 		],
@@ -86,41 +86,12 @@ var rcAbi = [
 		"name": "evAttr",
 		"outputs": [
 			{
-				"internalType": "bytes16",
-				"name": "CrPmax",
-				"type": "bytes16"
-			},
-			{
-				"internalType": "bytes16",
-				"name": "gamma",
-				"type": "bytes16"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "bytes16",
-				"name": "base",
-				"type": "bytes16"
-			},
-			{
 				"internalType": "uint256",
-				"name": "expo",
+				"name": "CrPmax",
 				"type": "uint256"
 			}
 		],
-		"name": "exp",
-		"outputs": [
-			{
-				"internalType": "bytes16",
-				"name": "",
-				"type": "bytes16"
-			}
-		],
-		"stateMutability": "pure",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -266,14 +237,14 @@ var rcAbi = [
 				"type": "uint256"
 			},
 			{
-				"internalType": "int256",
+				"internalType": "uint256",
 				"name": "value",
-				"type": "int256"
+				"type": "uint256"
 			},
 			{
-				"internalType": "int256",
+				"internalType": "uint256",
 				"name": "base",
-				"type": "int256"
+				"type": "uint256"
 			}
 		],
 		"name": "updateEnvironment",
@@ -282,7 +253,8 @@ var rcAbi = [
 		"type": "function"
 	}
 ];
-var rcAddr = "0x701A33C69909dD8Cd9B5b0f7A5E56893ac3dcF9f";
+
+var rcAddr = "0xAEaa9A4dE3f3F59AdeAcfAb5E7D1Cd0807979f27";
 var myRC = new web3.eth.Contract(rcAbi, rcAddr);
 
 myRC.events.isCalled({

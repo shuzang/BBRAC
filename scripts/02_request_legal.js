@@ -525,12 +525,12 @@ var accAbi = [
 	}
 ];
 
-var accAddr = "0x15C6D8a018f1C4f7CcB0cD8cf51E33b265fe62B1"
+var accAddr = "0xfb1C803c6f1D5Ab6358a37881f67F66c45F0887c"
 var myACC = new web3.eth.Contract(accAbi, accAddr);
 
 
-myACC.methods.accessControl("GPS", "read").send({
-	from: "0xeeBFCA7A2951CCFf05DD98DC0F3f1fe180baDE2e",
+myACC.methods.accessControl("lacation", "read").send({
+	from: "0xfb1C803c6f1D5Ab6358a37881f67F66c45F0887c",
 	gas: 10000000,
 	gasPrice: 0
 }).on('receipt', function(receipt) {
