@@ -36,16 +36,15 @@ do
   		fi
   		;;
   	3) 
-  		echo "access authorized" 
+  		echo "send request, should success" 
   		node 02_request_legal.js
   		;;
   	4) 
-  		echo "policy check failed" 
+  		echo "send request, should failed" 
   		node 03_request_illegal.js
   		;;
   	5) 
-  		echo "too frequent access" 
-  		node 02_request_legal.js
+  		echo "frequent requests" 
   		node 02_request_legal.js
   		node 02_request_legal.js
   		node 02_request_legal.js
