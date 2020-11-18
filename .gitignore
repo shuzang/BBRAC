@@ -1,8 +1,6 @@
+# contract metadata
 build/
 
 # node_modules files
 scripts/node_modules
 scripts/package-lock.json
-
-# quorum network data
-network/4-nodes-istanbul-bash/qdata
