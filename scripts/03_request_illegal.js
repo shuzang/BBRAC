@@ -533,15 +533,17 @@ myACC.methods.accessControl("location", "read").send({
 	from: "0xcA843569e3427144cEad5e4d5999a3D0cCF92B8e",
 	gas: 10000000,
 	gasPrice: 0
-}).on('receipt', function(receipt) {
+}).then(function(receipt) {
 	if(receipt.status) {
-		console.log("access failed!")
+		console.log("access failed!");
+		process.exit(0);
+	} else {
+		console.log("EVM revert");
+		process.exit(1);
 	}
-}).on('error',function(error,receipt) {
-	console.log("EVM revert");
 })
 
-process.exit(0);
+
 
 
 
