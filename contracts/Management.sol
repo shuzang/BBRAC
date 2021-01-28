@@ -5,9 +5,8 @@ pragma solidity >0.6.0 <0.8.0;
 /// @author shuzang
 contract Management {
     address public owner; // The ower of management contract 
-    ReputationM public rc;
     
-    struct RCContract {
+    struct RC {
         bool isValued;       // for duplicate check
         address creator;     // the peer(account) who created and deployed reputation contract
         address scAddress;   // the address of the smart contract
@@ -25,15 +24,15 @@ contract Management {
         string  deviceID;                   // the UUID of device
         string  deviceType;                 // device type, e.g. Loudness Sensor
         string  deviceRole;                 // device role, e.g. validator, manager or device 
-        uint256 timeofUnblocked;              // time when the resource is unblocked (0 if unblocked, otherwise, blocked)
+        uint256 endBBN;              // the end blocking block number,The initial value is the block number when the device is registered
         mapping (string => AttrValue) customed;   // other attribute self customed, can have no element
     }
     
     
     /// Mapping is marked internal, and write own getter function
-    RCContract public rcc;
+    RC public rc;
     mapping(address => Device)  internal lookupTable;
-    mapping(address => bool) internal isACCAddress; // judge if a address is a access control contract address, used by Reputation contract
+    mapping(address => bool) public isACCAddress; // judge if a address is a access control contract address, used by Reputation contract
     
     
     /// @dev Set contract deployer as owner
@@ -45,34 +44,30 @@ contract Management {
     function setRC(address  _rc, address _creator) public {
         //duplicate unchecked
         require(
-            !rcc.isValued,
+            !rc.isValued,
             "setRC error: Reputation contract already exist!"
         );
-        
+
         require(
             msg.sender == owner || msg.sender == _creator,
             "setRC error: Only mc owner or rc creator can register!"
         );
         
         // register
-        rcc.creator = _creator;
-        rcc.scAddress = _rc;
-        rcc.isValued = true;
-        
-        // setting for contract calls
-        rc = ReputationM(_rc);
+        rc.creator = _creator;
+        rc.scAddress = _rc;
+        rc.isValued = true;
     }
     
     /// @dev update the information (i.e., scAddress) of a registered reputation contract
     function updateRC(address _rc) public {
-        require(rcc.isValued, "Reputation contract not exist!");
+        require(rc.isValued, "Reputation contract not exist!");
         require(
-            msg.sender == owner || msg.sender == rcc.creator,
+            msg.sender == owner || msg.sender == rc.creator,
             "updateRC error: Only mc owner or rc creator can update rc!"
         );
 
-        rcc.scAddress = _rc;
-        rc = ReputationM(_rc);
+        rc.scAddress = _rc;
     }
     
     /// @dev deviceRegister register device attributes
@@ -101,7 +96,7 @@ contract Management {
         lookupTable[_device].deviceID = _deviceID;
         lookupTable[_device].deviceType = _deviceType;
         lookupTable[_device].deviceRole = _deviceRole;
-        lookupTable[_device].timeofUnblocked = 0;
+        lookupTable[_device].endBBN = block.number; //Initialize to the block number when registering
         lookupTable[_device].isValued = true;
         //rc.reputationCompute(msg.sender, false, 1, "Device register", now ); //设备注册事件提交会触发阻塞时间更新的的回调，回调时设备未注册陷入死循环 
         isACCAddress[_scAddress] = true;
@@ -127,7 +122,6 @@ contract Management {
         
         lookupTable[_device].customed[_attrName].value = _attrValue;
         lookupTable[_device].customed[_attrName].isValued = true;
-        rc.reputationCompute(msg.sender, false, 1, "Attribute add", block.timestamp);
     }
     
     /// @dev updateManager update the manager of device
@@ -138,7 +132,6 @@ contract Management {
             "updateManager error: Only mc owner or device manager can update device manager!"
         );
         lookupTable[_device].manager = _newManager;
-        rc.reputationCompute(msg.sender, false, 2, "Device manager update", block.timestamp);
     }
     
     /// @dev updateAttribute update attribute of device
@@ -159,21 +152,20 @@ contract Management {
             "updateAttribute error: Attribute not exist!"
         );
         lookupTable[_device].customed[_attrName].value = _attrValue;
-        rc.reputationCompute(msg.sender, false, 2, "Device customed attribute update", block.timestamp);
     }
     
-    /// @dev updateTimeofUnblocked update the time of unblocked, 
+    /// @dev updateEndBBN update the end blocking block number, 
     /// @notice this fucntion only can be call by reputation contract
-    function updateTimeofUnblocked(address _device, uint256 _timeofUnblocked) public {
+    function updateEndBBN(address _device, uint256 _endBBN) public {
         require(
             lookupTable[_device].isValued, 
-            "updateTimeofUnblocked error: Device not registered!"
+            "updateEndBBN error: Device not registered!"
         );
         require(
-            msg.sender == rcc.scAddress, 
-            "updateTimeofUnblocked error: Only reputation contract can update time of unblock!"
+            msg.sender == rc.scAddress, 
+            "updateEndBBN error: Only reputation contract can update end blocking block number!"
         );
-        lookupTable[_device].timeofUnblocked = _timeofUnblocked;
+        lookupTable[_device].endBBN = _endBBN;
     }
     
     /// @dev get the fixed device attribute(type is string)
@@ -242,13 +234,9 @@ contract Management {
         return lookupTable[_device].customed[_attrName].value;
     }
     
-    function getTimeofUnblocked(address _device) public view returns (uint256) {
-        require(lookupTable[_device].isValued, "getTimeofUnblocked error: Device not registered!");
-        return lookupTable[_device].timeofUnblocked;
-    }
-    
-    function isContractAddress(address _scAddress) public view returns (bool) {
-        return isACCAddress[_scAddress];
+    function getEndBBN(address _device) public view returns (uint256) {
+        require(lookupTable[_device].isValued, "getEndBBN error: Device not registered!");
+        return lookupTable[_device].endBBN;
     }
     
     /// @dev deleteDevice remove device from registered list
@@ -260,7 +248,6 @@ contract Management {
         );
         delete isACCAddress[lookupTable[_device].scAddress];
         delete lookupTable[_device];
-        rc.reputationCompute(msg.sender, false, 3, "Device delete", block.timestamp);
     }
     
     /// @dev deleteAttribute delete customed attribute
@@ -275,7 +262,6 @@ contract Management {
             "deleteAttribute error: Attribute not exist!"
         );
         delete lookupTable[_device].customed[_attrName];
-        rc.reputationCompute(msg.sender, false, 3, "Attribute delete", block.timestamp);
     }
 
     /// @dev stringCompare determine whether the strings are equal, using length + hash comparson to reduce gas consumption
@@ -293,14 +279,3 @@ contract Management {
         }
     }
 }    
-
-
-abstract contract ReputationM {
-    function reputationCompute(
-        address _subject, 
-        bool _ismisbehavior,
-        uint8 _behaviorID,
-        string memory _behavior,
-        uint256  _time
-    ) public virtual ;
-}

@@ -7,21 +7,21 @@ contract Reputation {
 
     address public owner;
     address public mcAddress;
-    ManagementR public mc;
+    Management public mc;
     
     event isCalled(
         address indexed _from, 
         bool _ismisbehavior, 
         string _behavior, 
-        uint _time, 
+        uint _bn, // block number
         int Cr, 
-        uint Tblocked
+        uint Blocked // Blocks blocked
     );
 
     struct BehaviorRecord {
         uint8 behaviorID;
         string behavior;
-        uint  time;
+        uint  blockNumber;
         uint currentWeight;
     }
     
@@ -29,7 +29,7 @@ contract Reputation {
         BehaviorRecord[] LegalBehaviors;
         BehaviorRecord[] MisBehaviors;
         uint begin; // begin index of legalBehaviors, when misbehaviors compute, this field recalculate
-        uint TimeofUnblocked; //End time of blocked (0 if unblocked, otherwise, blocked)
+        uint endBBN; // end blocking block number
     }
     
     struct Environment {
@@ -48,7 +48,7 @@ contract Reputation {
     /// @dev Set contract deployer as owner, set management contract address, initial environment variable
     constructor(address _mc) {
         owner = msg.sender;
-        mc = ManagementR(_mc);
+        mc = Management(_mc);
         mcAddress = _mc;
         initEnvironment();
     }
@@ -101,19 +101,19 @@ contract Reputation {
         bool _ismisbehavior,
         uint8 _behaviorID,
         string memory _behavior,
-        uint  _time
+        uint  _bn
     ) 
         public 
     {
         require(
-            mc.isContractAddress(msg.sender) || msg.sender == mcAddress,
+            mc.isACCAddress(msg.sender) || msg.sender == mcAddress,
             "reputationCompute error: only acc or mc can call function!"
         );
         
         if (_ismisbehavior) {
-            behaviorsLookup[_subject].MisBehaviors.push(BehaviorRecord(_behaviorID, _behavior, _time, evAttr.alpha[_behaviorID-1]));
+            behaviorsLookup[_subject].MisBehaviors.push(BehaviorRecord(_behaviorID, _behavior, _bn, evAttr.alpha[_behaviorID-1]));
         } else {
-            behaviorsLookup[_subject].LegalBehaviors.push(BehaviorRecord(_behaviorID, _behavior, _time, evAttr.omega[_behaviorID-1]));
+            behaviorsLookup[_subject].LegalBehaviors.push(BehaviorRecord(_behaviorID, _behavior, _bn, evAttr.omega[_behaviorID-1]));
         }
 
         // calculate negative impact part
@@ -147,17 +147,17 @@ contract Reputation {
 
         // calculate penalty
         uint Tblocked;
-        if ((block.timestamp > behaviorsLookup[_subject].TimeofUnblocked) && (credit < 0)) {
+        if ((block.number > behaviorsLookup[_subject].endBBN) && (credit < 0)) {
             if (behaviorsLookup[_subject].LegalBehaviors.length > behaviorsLookup[_subject].begin) {
                 behaviorsLookup[_subject].begin = behaviorsLookup[_subject].LegalBehaviors.length-1;
             }
             Tblocked = 2**uint(credit * -1);
             // update unblocked time
-            behaviorsLookup[_subject].TimeofUnblocked = block.timestamp + Tblocked;
-            mc.updateTimeofUnblocked(_subject, behaviorsLookup[_subject].TimeofUnblocked);
+            behaviorsLookup[_subject].endBBN = block.number + Tblocked;
+            mc.updateEndBBN(_subject, behaviorsLookup[_subject].endBBN);
         }
         
-        emit isCalled(_subject, _ismisbehavior, _behavior, _time, credit, Tblocked);
+        emit isCalled(_subject, _ismisbehavior, _behavior, _bn, credit, Tblocked);
     }
     
     /// @dev getLastBehavior get the latest behavior condition
@@ -170,7 +170,7 @@ contract Reputation {
         returns (
             uint _behaviorID, 
             string memory _behavior, 
-            uint _time
+            uint _bn
         ) 
     {
         uint latest;
@@ -179,13 +179,13 @@ contract Reputation {
             latest = behaviorsLookup[_requester].LegalBehaviors.length - 1;
             _behaviorID = behaviorsLookup[_requester].LegalBehaviors[latest].behaviorID;
             _behavior = behaviorsLookup[_requester].LegalBehaviors[latest].behavior;
-            _time = behaviorsLookup[_requester].LegalBehaviors[latest].time;
+            _bn = behaviorsLookup[_requester].LegalBehaviors[latest].blockNumber;
         } else {
             require(behaviorsLookup[_requester].MisBehaviors.length > 0, "There is currently no misbehavior");
             latest = behaviorsLookup[_requester].MisBehaviors.length - 1;
             _behaviorID = behaviorsLookup[_requester].MisBehaviors[latest].behaviorID;
             _behavior = behaviorsLookup[_requester].MisBehaviors[latest].behavior;
-            _time = behaviorsLookup[_requester].MisBehaviors[latest].time;
+            _bn = behaviorsLookup[_requester].MisBehaviors[latest].blockNumber;
         }
     }
     
@@ -219,20 +219,10 @@ contract Reputation {
             }
         }
     }
-
-    /// @dev exp calculate base^expo, and return the result as a quadruple precision floating point number.
-    // function exp(bytes16 base, uint expo) public pure returns (bytes16) {
-    //     bytes16 res;
-    //     for (uint i = 0; i < expo; i++) {
-    //         res = ABDKMathQuad.mul(res, base);
-    //     }
-    //     return res;
-    // }
-
 }
 
 
-abstract contract ManagementR {
-    function updateTimeofUnblocked(address _device, uint256 _TimeofUnblock) virtual public;
-    function isContractAddress(address _scAddress) virtual public view returns (bool);
+abstract contract Management {
+    function updateEndBBN(address _device, uint256 _endBBN) virtual public;
+    function isACCAddress(address _scAddress) virtual public view returns (bool);
 }

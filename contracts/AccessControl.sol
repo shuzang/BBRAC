@@ -4,14 +4,14 @@ pragma experimental ABIEncoderV2;
 
 contract AccessControl {
     address public manager;
-    ReputationA public rc;
-    ManagementA public mc;
+    Reputation public rc;
+    Management public mc;
 
     event ReturnAccessResult (
         address indexed from,
         bool result,
         string msg,
-        uint256 time
+        uint256 bn //block number
     );
 
     struct AttriValue {
@@ -39,7 +39,7 @@ contract AccessControl {
         uint256 NoFR; //Number of frequent Requests in a short period of time
     }
 
-    Environment public evAttr = Environment(5, 3, "denyoverrides");
+    Environment public evAttr = Environment(10, 3, "denyoverrides");
 
     // mapping subjcetAddress => BehaviorCriteria for behavior check
     mapping(address => BehaviorItem) internal behaviors;
@@ -52,8 +52,8 @@ contract AccessControl {
     /// @dev Set contract deployer as manager, set management and reputation contract address
     constructor(address _mc, address _rc, address _manager) {
         manager = _manager;
-        mc = ManagementA(_mc);
-        rc = ReputationA(_rc);
+        mc = Management(_mc);
+        rc = Reputation(_rc);
     }
     
     function updateEnviroment(uint256 _minInterval, uint256 _threshold, string memory _algorithm) public {
@@ -77,9 +77,9 @@ contract AccessControl {
             "updateSCAddr error: Updatable contract type can only be rc or mc!"
         );
         if (stringCompare(scType, "mc")) {
-            mc = ManagementA(_scAddress);
+            mc = Management(_scAddress);
         } else {
-            rc = ReputationA(_scAddress);
+            rc = Reputation(_scAddress);
         }
     }
     
@@ -90,7 +90,6 @@ contract AccessControl {
             "updateManager error: Only management contract can update manager address!"
         );
         manager = _manager;
-        rc.reputationCompute(msg.sender, false, 2, "Device manager update", block.timestamp);
     }
     
 
@@ -109,7 +108,6 @@ contract AccessControl {
         );
         resources[_resource][_attrName].value = _attrValue;
         resources[_resource][_attrName].isValued = true;
-        rc.reputationCompute(msg.sender, false, 1, "Resource attribute add", block.timestamp);
     }
 
     /// @dev updateResourceAttr update resource attribute
@@ -126,7 +124,6 @@ contract AccessControl {
             "updateResourceAttr error: Resource attribute not exist, pleased first call addResourceAttr!"
         );
         resources[_resource][_attrName].value = _attrValue;
-        rc.reputationCompute(msg.sender, false, 2, "Resource attribute update", block.timestamp);
     }
 
     /// @dev getResourceAttr get resource attribute
@@ -160,7 +157,6 @@ contract AccessControl {
             "deleteResourceAttr error: Resource attribute not exist, don't need delete!"
         );
         delete resources[_resource][_attrName];
-        rc.reputationCompute(msg.sender, false, 3, "Resource attribute delete", block.timestamp);
     }
 
     /// @dev addPolicy add a policy
@@ -180,7 +176,6 @@ contract AccessControl {
         policies[_resource][_action].push(
             PolicyItem(_attrOwner, _attrName, _operator, _attrValue, _importance)
         );
-        rc.reputationCompute(msg.sender, false, 1, "Policy add", block.timestamp);
     }
 
     /// @dev getPolicy get the policy associate with specified resource and action
@@ -252,7 +247,6 @@ contract AccessControl {
             "deletePolicy error: There is no policy for this resource and action at this time!"
         );
         delete policies[_resource][_action];
-        rc.reputationCompute(msg.sender, false, 3, "Policy delete", block.timestamp);
     }
     
     /// @dev deletePolicyItem delete the policy item associate with specified attribute name
@@ -267,7 +261,6 @@ contract AccessControl {
                 delete policies[_resource][_action][i];
             }
         }
-        rc.reputationCompute(msg.sender, false, 3, "Policy item delete", block.timestamp);
     }
 
     /// @dev stringToUint is a utility fucntion used for convert number string to uint
@@ -284,10 +277,10 @@ contract AccessControl {
     }
 
     /// @dev accessControl is core fucntion
-    function accessControl(string memory _resource, string memory _action) public returns (string memory) {
+    function accessControl(string memory _resource, string memory _action) public {
         address subject = msg.sender;
         require (
-            mc.getTimeofUnblocked(subject) < block.timestamp,
+            mc.getEndBBN(subject) < block.number,
             "access error: Device is still blocked!"
         );
         
@@ -371,29 +364,28 @@ contract AccessControl {
         }
         
         if (errcode == 0) {
-            rc.reputationCompute(subject, false, 4, "Access authorized", block.timestamp);
-            emit ReturnAccessResult(subject, true, "Access authorized", block.timestamp);
+            rc.reputationCompute(subject, false, 0, "Access authorized", block.number);
+            emit ReturnAccessResult(subject, true, "Access authorized", block.number);
         }
         
         if (errcode == 1) {
-            rc.reputationCompute(subject, true, 1, "Policy check failed", block.timestamp);
-            emit ReturnAccessResult(subject, false, "Policy check failed", block.timestamp);
+            rc.reputationCompute(subject, true, 1, "Policy check failed", block.number);
+            emit ReturnAccessResult(subject, false, "Policy check failed", block.number);
         }
         
         if (errcode == 2) {
-            rc.reputationCompute(subject, true, 2, "Too frequent access", block.timestamp);
-            emit ReturnAccessResult(subject, false, "Too frequent access", block.timestamp);
+            rc.reputationCompute(subject, true, 2, "Too frequent access", block.number);
+            emit ReturnAccessResult(subject, false, "Too frequent access", block.number);
         }
         
         if (errcode == 3) {
-            rc.reputationCompute(subject, true, 3, "Policy check failed and Too frequent access", block.timestamp);
-            emit ReturnAccessResult(subject, false, "Policy check failed and Too frequent access", block.timestamp);
+            rc.reputationCompute(subject, true, 3, "Policy check failed and Too frequent access", block.number);
+            emit ReturnAccessResult(subject, false, "Policy check failed and Too frequent access", block.number);
         }
         if (errcode == 4) {
-            rc.reputationCompute(subject, true, 4, "Importance check failed", block.timestamp);
-            emit ReturnAccessResult(subject, false, "Importance check failed", block.timestamp);
+            rc.reputationCompute(subject, true, 4, "Importance check failed", block.number);
+            emit ReturnAccessResult(subject, false, "Importance check failed", block.number);
         }
-        return finalResult;
     }
 
     function deleteACC() public {
@@ -418,19 +410,19 @@ contract AccessControl {
 }
 
 
-abstract contract ReputationA {
+abstract contract Reputation {
     function reputationCompute(
         address _subject, 
         bool _ismisbehavior,
         uint8 _behaviorID,
         string memory _behavior,
-        uint256  _time
+        uint256  _bn
     ) virtual public;
 }
 
 
-abstract contract ManagementA {
-    function getTimeofUnblocked(address _device)  public virtual returns (uint256);
+abstract contract Management {
+    function getEndBBN(address _device)  public virtual returns (uint256);
 
     function getFixedAttribute (
         address _device, 
