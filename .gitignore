@@ -1,5 +1,5 @@
 # contract metadata
-build/
+bin/contracts
 
 # node_modules files
 scripts/node_modules
