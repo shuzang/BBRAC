@@ -6,21 +6,18 @@ import "./ABDKMathQuad.sol";
 contract Reputation {
 
     address public owner;
-    address public mcAddress;
     Management public mc;
     
     event isCalled(
-        address indexed _from, 
-        bool _ismisbehavior, 
+        address indexed _from,
         string _behavior, 
-        uint _bn, // block number
-        int Cr, 
-        uint Blocked // Blocks blocked
+        uint _bn, // block number when behavior happen
+        int Cr, // Credit value
+        uint Blocked // Block numbers blocked
     );
 
     struct BehaviorRecord {
         uint8 behaviorID;
-        string behavior;
         uint  blockNumber;
         uint currentWeight;
     }
@@ -33,11 +30,10 @@ contract Reputation {
     }
     
     struct Environment {
-        uint[4] omega; 
-        uint[4] alpha; // penalty factor, index 2,4 is policy action, index 1 is large number of requests in a short time
+        uint omega; 
+        uint[3] alpha; // penalty factor, index 0 is frequent request, 1 is policy check failed, 2 is important policy checkfailed
         bytes16[2] lambda; // weight of CrP and CrN
         uint CrPmax;
-        //bytes16 gamma; // forgetting factor
     }
 
     // mapping devie address => Behavior recort for reputation compute
@@ -49,8 +45,19 @@ contract Reputation {
     constructor(address _mc) {
         owner = msg.sender;
         mc = Management(_mc);
-        mcAddress = _mc;
         initEnvironment();
+    }
+
+    /// @dev initEnvironment initial parameters of reputation function
+    function initEnvironment() internal {
+        evAttr.alpha[0] = 2; // 0.2 
+        evAttr.alpha[1] = 2; // 0.3
+        evAttr.alpha[2] = 3; // 0.5
+        evAttr.omega = 3; // 0.1
+        evAttr.lambda[0] = 0x3ffe0000000000000000000000000000; // 0.5
+        evAttr.lambda[1] = 0x3ffe0000000000000000000000000000; // 0.5
+        evAttr.CrPmax = 30; // 30
+        //evAttr.gamma = 0x3ffd3333333333333333333333333333; // 0.3
     }
     
     /// @dev updateEnvironment update parameters of reputation function
@@ -70,50 +77,51 @@ contract Reputation {
         );
         if (stringCompare(_name, "omega")) {
             require(
-                index >= 0 && index < 4,
+                index == 0,
                 "updateEnvironment error: parameter array overflow"
             );
-            evAttr.omega[index] = value;
+            evAttr.omega = value;
         }
         if (stringCompare(_name, "alpha")) {
             require(
-                index >= 0 && index < 4,
+                index >= 0 && index < 3,
                 "updateEnvironment error: parameter array overflow"
             );
             evAttr.alpha[index] = value;
         }
         if (stringCompare(_name, "lambda")) {
             require(
-                index >= 0 && index < 4,
+                index >= 0 && index < 2,
                 "updateEnvironment error: parameter array overflow"
             );
             evAttr.lambda[index] = input;
         }
         if (stringCompare(_name, "CrPmax")) {
+            require(
+                index == 0,
+                "updateEnvironment error: parameter array overflow"
+            );
             evAttr.CrPmax = value;
         }
     }
 
-    /// @dev reputationCompute compute the positive impact part and negative impact part of credit value,
-    ///      and then, compute blocked time and reward time according the credit value and update the device attribute
+    /// @dev reputationCompute compute credit value, and then give the penalty through attribute in MC
     function reputationCompute(
         address _subject, 
-        bool _ismisbehavior,
         uint8 _behaviorID,
-        string memory _behavior,
         uint  _bn
     ) 
         public 
     {
         require(
-            mc.isACCAddress(msg.sender) || msg.sender == mcAddress,
-            "reputationCompute error: only acc or mc can call function!"
+            mc.isACCAddress(msg.sender),
+            "reputationCompute error: only acc can call function!"
         );
         
-        if (_ismisbehavior) {
-            behaviorsLookup[_subject].MisBehaviors.push(BehaviorRecord(_behaviorID, _behavior, _bn, evAttr.alpha[_behaviorID-1]));
+        if (_behaviorID == 0) {
+            behaviorsLookup[_subject].LegalBehaviors.push(BehaviorRecord(_behaviorID, _bn, evAttr.omega));
         } else {
-            behaviorsLookup[_subject].LegalBehaviors.push(BehaviorRecord(_behaviorID, _behavior, _bn, evAttr.omega[_behaviorID-1]));
+            behaviorsLookup[_subject].MisBehaviors.push(BehaviorRecord(_behaviorID, _bn, evAttr.alpha[_behaviorID-1]));
         }
 
         // calculate negative impact part
@@ -131,10 +139,8 @@ contract Reputation {
         }
 
         // calculate positive impact part
-        uint CrP;
-        for (uint i = behaviorsLookup[_subject].begin; i < behaviorsLookup[_subject].LegalBehaviors.length; i++) {
-            CrP = CrP + behaviorsLookup[_subject].LegalBehaviors[i].currentWeight; 
-        }
+        uint legLen = behaviorsLookup[_subject].LegalBehaviors.length;
+        uint CrP = ( legLen - behaviorsLookup[_subject].begin)*evAttr.omega;
         if (CrP > evAttr.CrPmax) {
             CrP = evAttr.CrPmax;
         }
@@ -148,61 +154,24 @@ contract Reputation {
         // calculate penalty
         uint Tblocked;
         if ((block.number > behaviorsLookup[_subject].endBBN) && (credit < 0)) {
-            if (behaviorsLookup[_subject].LegalBehaviors.length > behaviorsLookup[_subject].begin) {
-                behaviorsLookup[_subject].begin = behaviorsLookup[_subject].LegalBehaviors.length-1;
+            if (legLen > behaviorsLookup[_subject].begin) {
+                behaviorsLookup[_subject].begin = legLen-1;
             }
             Tblocked = 2**uint(credit * -1);
-            // update unblocked time
+            // update end blocking block number
             behaviorsLookup[_subject].endBBN = block.number + Tblocked;
             mc.updateEndBBN(_subject, behaviorsLookup[_subject].endBBN);
         }
-        
-        emit isCalled(_subject, _ismisbehavior, _behavior, _bn, credit, Tblocked);
-    }
-    
-    /// @dev getLastBehavior get the latest behavior condition
-    function getLastBehavior(
-        address _requester, 
-        uint8 _behaviorType
-    ) 
-        public 
-        view 
-        returns (
-            uint _behaviorID, 
-            string memory _behavior, 
-            uint _bn
-        ) 
-    {
-        uint latest;
-        if (_behaviorType == 0) {
-            require(behaviorsLookup[_requester].LegalBehaviors.length > 0, "There is currently no legal behavior");
-            latest = behaviorsLookup[_requester].LegalBehaviors.length - 1;
-            _behaviorID = behaviorsLookup[_requester].LegalBehaviors[latest].behaviorID;
-            _behavior = behaviorsLookup[_requester].LegalBehaviors[latest].behavior;
-            _bn = behaviorsLookup[_requester].LegalBehaviors[latest].blockNumber;
-        } else {
-            require(behaviorsLookup[_requester].MisBehaviors.length > 0, "There is currently no misbehavior");
-            latest = behaviorsLookup[_requester].MisBehaviors.length - 1;
-            _behaviorID = behaviorsLookup[_requester].MisBehaviors[latest].behaviorID;
-            _behavior = behaviorsLookup[_requester].MisBehaviors[latest].behavior;
-            _bn = behaviorsLookup[_requester].MisBehaviors[latest].blockNumber;
+
+        if (_behaviorID == 0) {
+            emit isCalled(_subject, "Access authrozied", _bn, credit, Tblocked);
+        }else if (_behaviorID == 1) {
+            emit isCalled(_subject, "Too frequent access", _bn, credit, Tblocked);
+        }else if (_behaviorID == 2) {
+            emit isCalled(_subject, "Policy check failed", _bn, credit, Tblocked);
+        }else{
+            emit isCalled(_subject, "Important policy check failed", _bn, credit, Tblocked);
         }
-    }
-    
-    /// @dev initEnvironment initial parameters of reputation function
-    function initEnvironment() internal {
-        evAttr.alpha[0] = 5; // 0.2 
-        evAttr.alpha[1] = 10; // 0.3
-        evAttr.alpha[2] = 15; // 0.5
-        evAttr.alpha[3] = 12; // 0.4
-        evAttr.omega[0] = 10; // 0.1
-        evAttr.omega[1] = 10; // 0.1
-        evAttr.omega[2] = 10; // 0.1
-        evAttr.omega[3] = 10; // 0.1
-        evAttr.lambda[0] = 0x3ffe0000000000000000000000000000; // 0.5
-        evAttr.lambda[1] = 0x3ffe0000000000000000000000000000; // 0.5
-        evAttr.CrPmax = 30; // 30
-        //evAttr.gamma = 0x3ffd3333333333333333333333333333; // 0.3
     }
 
     /// @dev stringCompare determine whether the strings are equal, using length + hash comparson to reduce gas consumption

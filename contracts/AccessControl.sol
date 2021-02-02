@@ -9,8 +9,8 @@ contract AccessControl {
 
     event ReturnAccessResult (
         address indexed from,
-        bool result,
-        string msg,
+        string result,
+        uint8 behaviorID,
         uint256 bn //block number
     );
 
@@ -277,7 +277,7 @@ contract AccessControl {
     }
 
     /// @dev accessControl is core fucntion
-    function accessControl(string memory _resource, string memory _action) public {
+    function accessControl(string memory _resource, string memory _action) public returns (string memory) {
         address subject = msg.sender;
         require (
             mc.getEndBBN(subject) < block.number,
@@ -285,26 +285,25 @@ contract AccessControl {
         );
         
         PolicyItem memory current;
-        string memory _attrValue; 
         
-        bool policycheck;
-        bool behaviorcheck;
-        uint8 errcode;
         bool[2] memory result; // result[0] record if a rule in policy match, result[1] record if a rule not match
+        uint8 behaviorID; // 0 is Access authorized, 1 is Too frequent access, 2 is Policy check failed, 3 is Important policy check failed
         string memory finalResult;
         
-        // unblocked state
+        // frequent request detect
         if ((block.timestamp - behaviors[subject].ToLR) <= evAttr.minInterval) {
             behaviors[subject].NoFR++;
             if (behaviors[subject].NoFR >= evAttr.threshold) {
-                behaviorcheck = true;
+                behaviorID = 1;
             }
         } else {
             behaviors[subject].NoFR = 0;
         } 
+        behaviors[subject].ToLR = block.timestamp; // Update time of last request
 
         // check policies
-        for (uint256 i = 0; i < policies[_resource][_action].length; i++) {
+        for (uint256 i = 0; i < policies[_resource][_action].length && behaviorID != 1; i++) {
+            string memory _attrValue; 
             current.attrOwner = policies[_resource][_action][i].attrOwner;
             current.attrName = policies[_resource][_action][i].attrName;
             current.operator = policies[_resource][_action][i].operator;
@@ -319,7 +318,7 @@ contract AccessControl {
             } else {
                 _attrValue = resources[_resource][current.attrName].value;
             }
-
+            // check result[1] first, because its default value is false
             if (stringCompare(current.operator,">") && (stringToUint(_attrValue) <= stringToUint(current.attrValue))) {
                 result[1] = true;
             } else {
@@ -335,57 +334,39 @@ contract AccessControl {
             } else {
                 result[0] = true;
             }
-            
-            if (result[1] && policies[_resource][_action][i].importance != 0) {
-                errcode = 4;
+
+            // mark when policy check failed
+            if (result[1] && behaviorID != 3) {
+                behaviorID = 2;
+                if (policies[_resource][_action][i].importance != 0) {
+                    behaviorID = 3;
+                }
             }
         }
 
-        // determine policy check result when rules conflict
+        // determine final result
         if (stringCompare(evAttr.algorithm, "denyoverrides") && result[1]) {
-            policycheck = true;
+            finalResult = "deny";
+        }else{
+            finalResult = "allow";
         }
         if (stringCompare(evAttr.algorithm, "allowoverrides") && result[0]) {
-            policycheck = false;
-        }
-        
-        if (policycheck && !behaviorcheck && (errcode != 4)) errcode = 1; // Static check failed!
-        if (!policycheck && behaviorcheck) errcode = 2; // Misbehavior detected!
-        if (policycheck && behaviorcheck) errcode = 3; // Static check failed and Misbehavior detected
-        
-        behaviors[subject].ToLR = block.timestamp;
-        // determine final result
-        if (policycheck || behaviorcheck) {
-            finalResult = "deny";
-        } else if (result[0] || result[1]) {
             finalResult = "allow";
-        } else {
+        }else{
+            finalResult = "deny";
+        }
+        if (!result[0] && !result[1]) {
             finalResult = "NotDefine";
         }
-        
-        if (errcode == 0) {
-            rc.reputationCompute(subject, false, 0, "Access authorized", block.number);
-            emit ReturnAccessResult(subject, true, "Access authorized", block.number);
+
+        // behavior report and emit event   
+        if (!stringCompare(finalResult, "NotDefine")){
+            rc.reputationCompute(subject, behaviorID, block.number);
         }
-        
-        if (errcode == 1) {
-            rc.reputationCompute(subject, true, 1, "Policy check failed", block.number);
-            emit ReturnAccessResult(subject, false, "Policy check failed", block.number);
-        }
-        
-        if (errcode == 2) {
-            rc.reputationCompute(subject, true, 2, "Too frequent access", block.number);
-            emit ReturnAccessResult(subject, false, "Too frequent access", block.number);
-        }
-        
-        if (errcode == 3) {
-            rc.reputationCompute(subject, true, 3, "Policy check failed and Too frequent access", block.number);
-            emit ReturnAccessResult(subject, false, "Policy check failed and Too frequent access", block.number);
-        }
-        if (errcode == 4) {
-            rc.reputationCompute(subject, true, 4, "Importance check failed", block.number);
-            emit ReturnAccessResult(subject, false, "Importance check failed", block.number);
-        }
+
+        emit ReturnAccessResult(subject, finalResult, behaviorID, block.number);
+
+        return finalResult;
     }
 
     function deleteACC() public {
@@ -413,9 +394,7 @@ contract AccessControl {
 abstract contract Reputation {
     function reputationCompute(
         address _subject, 
-        bool _ismisbehavior,
         uint8 _behaviorID,
-        string memory _behavior,
         uint256  _bn
     ) virtual public;
 }
