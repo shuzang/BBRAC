@@ -10,7 +10,7 @@ There are some deploy and test files in `truffle` folder. But truffle is limited
 | ------------------- | ---------------- | -------------- |
 | Management.sol      | 2892826 gas      | 2147350 gas    |
 | Reputation.sol      | 2148487 gas      | 1630279 gas    |
-| AccessControl.sol   | 4114582 gas      | 3095486 gas    |
+| AccessControl.sol   | 4221936 gas      | 3178588 gas    |
 | ABDKMathQuad.sol    | 76861 gas        | 17297 gas      |
 
 ### 1.2 Bytecode size
