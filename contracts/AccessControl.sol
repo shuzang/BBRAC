@@ -173,6 +173,7 @@ contract AccessControl {
         public 
     {
         require(msg.sender == manager, "addPolicy error: Caller is not manager!");
+        require(stringCompare(_operator, ">") || stringCompare(_operator, "<") || stringCompare(_operator, "="), "addPolicy error: operator should be >, < or =");
         policies[_resource][_action].push(
             PolicyItem(_attrOwner, _attrName, _operator, _attrValue, _importance)
         );
@@ -285,8 +286,9 @@ contract AccessControl {
         );
         
         PolicyItem memory current;
-        
-        bool[2] memory result; // result[0] record if a rule in policy match, result[1] record if a rule not match
+        bool behaviorCheck;
+        bool policyCheck;
+        int[3] memory result; // numbers of policy, 0 is check success, 1 is check failed, 2 is important check failed
         uint8 behaviorID; // 0 is Access authorized, 1 is Too frequent access, 2 is Policy check failed, 3 is Important policy check failed
         string memory finalResult;
         
@@ -294,7 +296,7 @@ contract AccessControl {
         if ((block.timestamp - behaviors[subject].ToLR) <= evAttr.minInterval) {
             behaviors[subject].NoFR++;
             if (behaviors[subject].NoFR >= evAttr.threshold) {
-                behaviorID = 1;
+                behaviorCheck = true;
             }
         } else {
             behaviors[subject].NoFR = 0;
@@ -302,8 +304,13 @@ contract AccessControl {
         behaviors[subject].ToLR = block.timestamp; // Update time of last request
 
         // check policies
+        if (policies[_resource][_action].length == 0) {
+            emit ReturnAccessResult(subject, "NotDefine", behaviorID, block.number);
+            return "NotDefine";
+        }
         for (uint256 i = 0; i < policies[_resource][_action].length && behaviorID != 1; i++) {
             string memory _attrValue; 
+            bool currentPolicy;
             current.attrOwner = policies[_resource][_action][i].attrOwner;
             current.attrName = policies[_resource][_action][i].attrName;
             current.operator = policies[_resource][_action][i].operator;
@@ -320,50 +327,55 @@ contract AccessControl {
             }
             // check result[1] first, because its default value is false
             if (stringCompare(current.operator,">") && (stringToUint(_attrValue) <= stringToUint(current.attrValue))) {
-                result[1] = true;
-            } else {
-                result[0] = true;
+                currentPolicy = true;
             }
             if (stringCompare(current.operator,"<") && (stringToUint(_attrValue) >= stringToUint(current.attrValue))) {
-                result[1] = true;
-            } else {
-                result[0] = true;
+                currentPolicy = true;
             }
             if (stringCompare(current.operator,"=") && (!stringCompare(_attrValue,current.attrValue))) {
-                result[1] = true;
-            } else {
-                result[0] = true;
+                currentPolicy = true;
             }
 
-            // mark when policy check failed
-            if (result[1] && behaviorID != 3) {
-                behaviorID = 2;
+            // mark when policy check result
+            if (currentPolicy) {
+                result[1]++;
                 if (policies[_resource][_action][i].importance != 0) {
-                    behaviorID = 3;
+                    result[2]++;
                 }
+            }else{
+                result[0]++;
+            }
+        }
+
+        // determine policy check result when rules conflict
+        if (stringCompare(evAttr.algorithm, "denyoverrides") && result[1] > 0) {
+            policyCheck = true;
+        }
+        if (stringCompare(evAttr.algorithm, "allowoverrides") && result[0] == 0) {
+            policyCheck = true;
+        }
+
+        // determine behavior ID
+        if (behaviorCheck && !policyCheck) {
+            behaviorID = 1;
+        }
+        if(!behaviorCheck && policyCheck) {
+            if (result[2] > 0) {
+                behaviorID = 3;
+            }else{
+                behaviorID = 2;
             }
         }
 
         // determine final result
-        if (stringCompare(evAttr.algorithm, "denyoverrides") && result[1]) {
+        if (policyCheck || behaviorCheck) {
             finalResult = "deny";
         }else{
             finalResult = "allow";
         }
-        if (stringCompare(evAttr.algorithm, "allowoverrides") && result[0]) {
-            finalResult = "allow";
-        }else{
-            finalResult = "deny";
-        }
-        if (!result[0] && !result[1]) {
-            finalResult = "NotDefine";
-        }
-
+        
         // behavior report and emit event   
-        if (!stringCompare(finalResult, "NotDefine")){
-            rc.reputationCompute(subject, behaviorID, block.number);
-        }
-
+        rc.reputationCompute(subject, behaviorID, block.number);
         emit ReturnAccessResult(subject, finalResult, behaviorID, block.number);
 
         return finalResult;
