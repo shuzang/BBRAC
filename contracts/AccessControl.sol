@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 
 contract AccessControl {
     address public manager;
-    Reputation public rc;
     Management public mc;
 
     event ReturnAccessResult (
@@ -50,10 +49,9 @@ contract AccessControl {
     mapping(string => mapping(string => PolicyItem[])) internal policies;
 
     /// @dev Set contract deployer as manager, set management and reputation contract address
-    constructor(address _mc, address _rc, address _manager) {
+    constructor(address _mc, address _manager) {
         manager = _manager;
         mc = Management(_mc);
-        rc = Reputation(_rc);
     }
     
     function updateEnviroment(uint256 _minInterval, uint256 _threshold, string memory _algorithm) public {
@@ -67,20 +65,13 @@ contract AccessControl {
     }
     
     /// @dev updateSCAddr update management contract or reputation contract address
-    function updateSCAddr(string memory scType, address _scAddress) public {
+    function updateSCAddr(address _scAddress) public {
         require(
             msg.sender == manager,
             "updateSCAddr error: Only acc manager can update mc or rc address!"
         );
-        require(
-            stringCompare(scType, "mc") || stringCompare(scType, "rc"),
-            "updateSCAddr error: Updatable contract type can only be rc or mc!"
-        );
-        if (stringCompare(scType, "mc")) {
-            mc = Management(_scAddress);
-        } else {
-            rc = Reputation(_scAddress);
-        }
+        mc = Management(_scAddress);
+        
     }
     
     /// @dev updateManager update device manager, after that only new manager can operate this access control contract
@@ -280,10 +271,6 @@ contract AccessControl {
     /// @dev accessControl is core fucntion
     function accessControl(string memory _resource, string memory _action) public returns (string memory) {
         address subject = msg.sender;
-        require (
-            mc.getEndBBN(subject) < block.number,
-            "access error: Device is still blocked!"
-        );
         
         PolicyItem memory current;
         bool behaviorCheck;
@@ -374,8 +361,7 @@ contract AccessControl {
             finalResult = "allow";
         }
         
-        // behavior report and emit event   
-        rc.reputationCompute(subject, behaviorID, block.number);
+        // emit event   
         emit ReturnAccessResult(subject, finalResult, behaviorID, block.number);
 
         return finalResult;
@@ -403,18 +389,7 @@ contract AccessControl {
 }
 
 
-abstract contract Reputation {
-    function reputationCompute(
-        address _subject, 
-        uint8 _behaviorID,
-        uint256  _bn
-    ) virtual public;
-}
-
-
 abstract contract Management {
-    function getEndBBN(address _device)  public virtual returns (uint256);
-
     function getFixedAttribute (
         address _device, 
         string memory _attrName
