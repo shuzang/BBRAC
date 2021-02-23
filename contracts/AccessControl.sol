@@ -10,7 +10,7 @@ contract AccessControl {
         address indexed from,
         string result,
         uint8 behaviorID,
-        uint256 bn //block number
+        uint256 time 
     );
 
     struct AttriValue {
@@ -24,7 +24,6 @@ contract AccessControl {
         string attrName; // attribute name
         string operator; // Conditions operator that policyItem used
         string attrValue; // Conditions that policyItem should meet
-        uint importance; // Importance of this policy item, it will be submit to rc for calculating reputation hhen it is not 0
     }
     
     struct Environment {
@@ -158,15 +157,14 @@ contract AccessControl {
         string memory _attrOwner,
         string memory _attrName,
         string memory _operator,
-        string memory _attrValue,
-        uint _importance
+        string memory _attrValue
     ) 
         public 
     {
         require(msg.sender == manager, "addPolicy error: Caller is not manager!");
         require(stringCompare(_operator, ">") || stringCompare(_operator, "<") || stringCompare(_operator, "="), "addPolicy error: operator should be >, < or =");
         policies[_resource][_action].push(
-            PolicyItem(_attrOwner, _attrName, _operator, _attrValue, _importance)
+            PolicyItem(_attrOwner, _attrName, _operator, _attrValue)
         );
     }
 
@@ -191,8 +189,7 @@ contract AccessControl {
                 policies[_resource][_action][i].attrOwner,
                 policies[_resource][_action][i].attrName,
                 policies[_resource][_action][i].operator,
-                policies[_resource][_action][i].attrValue,
-                policies[_resource][_action][i].importance
+                policies[_resource][_action][i].attrValue
             );
         }
         return result;
@@ -222,8 +219,7 @@ contract AccessControl {
                     policies[_resource][_action][i].attrOwner,
                     _attrName,
                     policies[_resource][_action][i].operator,
-                    policies[_resource][_action][i].attrValue,
-                    policies[_resource][_action][i].importance
+                    policies[_resource][_action][i].attrValue
                 );
                 num++;
             }
@@ -275,7 +271,7 @@ contract AccessControl {
         PolicyItem memory current;
         bool behaviorCheck;
         bool policyCheck;
-        int[3] memory result; // numbers of policy, 0 is check success, 1 is check failed, 2 is important check failed
+        int[2] memory result; // numbers of policy, 0 is check success, 1 is check failed
         uint8 behaviorID; // 0 is Access authorized, 1 is Too frequent access, 2 is Policy check failed, 3 is Important policy check failed
         string memory finalResult;
         
@@ -326,9 +322,6 @@ contract AccessControl {
             // mark when policy check result
             if (currentPolicy) {
                 result[1]++;
-                if (policies[_resource][_action][i].importance != 0) {
-                    result[2]++;
-                }
             }else{
                 result[0]++;
             }
@@ -347,11 +340,7 @@ contract AccessControl {
             behaviorID = 1;
         }
         if(!behaviorCheck && policyCheck) {
-            if (result[2] > 0) {
-                behaviorID = 3;
-            }else{
-                behaviorID = 2;
-            }
+            behaviorID = 2;
         }
 
         // determine final result
@@ -362,7 +351,7 @@ contract AccessControl {
         }
         
         // emit event   
-        emit ReturnAccessResult(subject, finalResult, behaviorID, block.number);
+        emit ReturnAccessResult(subject, finalResult, behaviorID, block.timestamp);
 
         return finalResult;
     }

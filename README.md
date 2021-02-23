@@ -6,18 +6,15 @@ There are some deploy and test files in `truffle` folder. But truffle is limited
 
 ### 1.1 Deploy Gas
 
-| 操作                 | transaction cost | execution cost |
-| ------------------- | ---------------- | -------------- |
-| Management.sol      | 2892826 gas      | 2147350 gas    |
-| Reputation.sol      | 2148487 gas      | 1630279 gas    |
-| AccessControl.sol   | 4221936 gas      | 3178588 gas    |
-| ABDKMathQuad.sol    | 76861 gas        | 17297 gas      |
+| 操作                 | transaction cost | 
+| ------------------- | ---------------- | 
+| Management.sol      | 2454563 gas      | 
+| AccessControl.sol   | 3844394 gas      | 
+
 
 ### 1.2 Bytecode size
 
-- ABDKMathQuad.sol: 885 bytes
 - Management.sol: 77,960 bytes(78.0 KB)
-- Reputation.sol: 102,088 bytes(102.1 KB) 
 - AccessControl.sol: 121,454 bytes(121.5 KB)
 
 ## 2. 其他说明
