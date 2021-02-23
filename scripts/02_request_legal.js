@@ -11,11 +11,6 @@ var accAbi = [
 			},
 			{
 				"internalType": "address",
-				"name": "_rc",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
 				"name": "_manager",
 				"type": "address"
 			}
@@ -34,15 +29,15 @@ var accAbi = [
 			},
 			{
 				"indexed": false,
-				"internalType": "bool",
+				"internalType": "string",
 				"name": "result",
-				"type": "bool"
+				"type": "string"
 			},
 			{
 				"indexed": false,
-				"internalType": "string",
-				"name": "msg",
-				"type": "string"
+				"internalType": "uint8",
+				"name": "behaviorID",
+				"type": "uint8"
 			},
 			{
 				"indexed": false,
@@ -109,11 +104,6 @@ var accAbi = [
 				"internalType": "string",
 				"name": "_attrValue",
 				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_importance",
-				"type": "uint256"
 			}
 		],
 		"name": "addPolicy",
@@ -269,11 +259,6 @@ var accAbi = [
 						"internalType": "string",
 						"name": "attrValue",
 						"type": "string"
-					},
-					{
-						"internalType": "uint256",
-						"name": "importance",
-						"type": "uint256"
 					}
 				],
 				"internalType": "struct AccessControl.PolicyItem[]",
@@ -325,11 +310,6 @@ var accAbi = [
 						"internalType": "string",
 						"name": "attrValue",
 						"type": "string"
-					},
-					{
-						"internalType": "uint256",
-						"name": "importance",
-						"type": "uint256"
 					}
 				],
 				"internalType": "struct AccessControl.PolicyItem[]",
@@ -382,20 +362,7 @@ var accAbi = [
 		"name": "mc",
 		"outputs": [
 			{
-				"internalType": "contract ManagementA",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "rc",
-		"outputs": [
-			{
-				"internalType": "contract ReputationA",
+				"internalType": "contract Management",
 				"name": "",
 				"type": "address"
 			}
@@ -508,11 +475,6 @@ var accAbi = [
 	{
 		"inputs": [
 			{
-				"internalType": "string",
-				"name": "scType",
-				"type": "string"
-			},
-			{
 				"internalType": "address",
 				"name": "_scAddress",
 				"type": "address"
@@ -524,14 +486,13 @@ var accAbi = [
 		"type": "function"
 	}
 ];
-
 var accAddr = "0xfb1C803c6f1D5Ab6358a37881f67F66c45F0887c"
 
 
 async function legalTest() {
 	const myACC = new web3.eth.Contract(accAbi, accAddr);
 	try {
-		const receipt = await myACC.methods.accessControl("location", "read").send({
+		const receipt = await myACC.methods.accessControl("basicInformation", "read").send({
 			from: "0xb474edb969802f81e5bb0c977bee3b0ab91736f8",
 			gas: 10000000,
 			gasPrice: 0

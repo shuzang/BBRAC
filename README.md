@@ -50,30 +50,18 @@ Remix connect using rpcport, web3 connect using wsport
 
 ## 3. deploy record
 
-利用 Cakeshop 在 Node1 中新建一个账户，并转给新账户 1000 ETH，Node2 和 Node3 做同样的操作。  
+利用 Cakeshop 在 Node2 和 Node3 中新建一个账户，并转给新账户 1000 ETH
 
-Node1 两个账户分别部署 MC 和 RC，Node2 的两个账户分别是发起请求的设备和它的管理者，Node3 的两个账户分别是被请求的设备和它的管理者。
+Node1 第一个账户部署 MC ，Node2 的两个账户分别是发起请求的设备和它的管理者，Node3 的两个账户分别是被请求的设备和它的管理者。
 
 1. Node1 account0 deploy MC   
     deploy account: 0xed9d02e382b34818e88B88a309c7fe71E65f419d    
     return MC address: 0x1349F3e1B8D71eFfb47B840594Ff27dA7E603d17
 
-2. Node1 account1 deploy RC   
-    deploy account: 0xa4040cEE0cF30de69A9FC617fea49F5EC29034cD    
-    input: MC address      
-    return RC address: 0xAEaa9A4dE3f3F59AdeAcfAb5E7D1Cd0807979f27
-
-3. Node1 account1 setRC in MC    
-    call account: 0xa4040cEE0cF30de69A9FC617fea49F5EC29034cD   
-    input:
-    - RC address: 0xAEaa9A4dE3f3F59AdeAcfAb5E7D1Cd0807979f27
-    - RC creator: 0xa4040cEE0cF30de69A9FC617fea49F5EC29034cD
-
 4. Node2 account0 deploy ACC  
     deploy account: 0xcA843569e3427144cEad5e4d5999a3D0cCF92B8e 
     input:
     - MC address: 0x1349F3e1B8D71eFfb47B840594Ff27dA7E603d17
-    - RC address: 0xAEaa9A4dE3f3F59AdeAcfAb5E7D1Cd0807979f27
     - manager: 0xcA843569e3427144cEad5e4d5999a3D0cCF92B8e   
 
     return ACC address: 0x87Ec4E85245D901DE66C09c96Bd53C8146e0C12D
@@ -82,7 +70,6 @@ Node1 两个账户分别部署 MC 和 RC，Node2 的两个账户分别是发起�
     deploy account: 0xB474eDB969802f81E5BB0C977bEE3B0aB91736F8    
     input:
     - MC address: 0x1349F3e1B8D71eFfb47B840594Ff27dA7E603d17
-    - RC address: 0xAEaa9A4dE3f3F59AdeAcfAb5E7D1Cd0807979f27
     - manager: 0xcA843569e3427144cEad5e4d5999a3D0cCF92B8e   
 
     return ACC address: 0x43FF91eECdB11B8f7a2A2A65Bc64d934d8336BED
@@ -95,7 +82,7 @@ Node1 两个账户分别部署 MC 和 RC，Node2 的两个账户分别是发起�
     - ACC address: 0x87Ec4E85245D901DE66C09c96Bd53C8146e0C12D
     - deviceID: gateway202
     - deviceType: gateway
-    - deviceRole: manager
+    - deviceRole: non-validator
 
 7. Node2 account1 register    
     call account: 0xcA843569e3427144cEad5e4d5999a3D0cCF92B8e   
@@ -112,7 +99,6 @@ Node1 两个账户分别部署 MC 和 RC，Node2 的两个账户分别是发起�
     deploy account: 0x0fBDc686b912d7722dc86510934589E0AAf3b55A    
     input:
     - MC address: 0x1349F3e1B8D71eFfb47B840594Ff27dA7E603d17
-    - RC address: 0xAEaa9A4dE3f3F59AdeAcfAb5E7D1Cd0807979f27
     - manager: 0x0fBDc686b912d7722dc86510934589E0AAf3b55A   
 
     return ACC address: 0x9E966663fCA74605357e328994D29a3D6D614C2F
@@ -121,7 +107,6 @@ Node1 两个账户分别部署 MC 和 RC，Node2 的两个账户分别是发起�
     deploy account: 0x0c9Fd5f5212D15dcaE054a798c1C0916D286d58a    
     input:
     - MC address: 0x1349F3e1B8D71eFfb47B840594Ff27dA7E603d17
-    - RC address: 0xAEaa9A4dE3f3F59AdeAcfAb5E7D1Cd0807979f27
     - manager: 0x0fBDc686b912d7722dc86510934589E0AAf3b55A   
 
     return ACC address: 0xfb1C803c6f1D5Ab6358a37881f67F66c45F0887c
@@ -134,7 +119,7 @@ Node1 两个账户分别部署 MC 和 RC，Node2 的两个账户分别是发起�
     - ACC address: 0x9E966663fCA74605357e328994D29a3D6D614C2F
     - deviceID: gateway203
     - deviceType: gateway
-    - deviceRole: manager
+    - deviceRole: non-validator
 
 11. Node3 account1 register   
     call account: 0x0fBDc686b912d7722dc86510934589E0AAf3b55A   
@@ -149,13 +134,34 @@ Node1 两个账户分别部署 MC 和 RC，Node2 的两个账户分别是发起�
 12. Node3 account1 addPolicy  
     call account: 0x0fBDc686b912d7722dc86510934589E0AAf3b55A   
     input:
-    - resource: location
+    - resource: basicInformation
     - action: read
     - attribute owner: subject
     - attribute name: deviceID
     - operator: =
     - attribute value: pallat23
-    - importance: 0
 
 13. Node2 account1 access test(passed)
 14. Node2 account0 access test(passed)
+
+## 4. use script
+
+web3.js is necessary when we execute scripts, install it in root directory. All scripts are in scripts folder.
+
+```
+# 1.2.8 is the only version we tested successfully
+$ npm install web3@1.2.8
+```
+
+After then, Execute the first script to verify the connection
+
+![](resources/connect_test.png)
+
+Execute the fourth script to monitor result.
+
+![](resources/monitor_result.png)
+
+Execute the second and the third script in order.
+
+![](resources/send_request.png)
+
