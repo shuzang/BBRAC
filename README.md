@@ -2,9 +2,8 @@ An attribute-based access control system. Implement in the Quorum blockchain usi
 
 There are some deploy and test files in `truffle` folder. But truffle is limited and our different contracts have complex deployment and calling relationships. That is why we don't use truffle later.
 
-## 1.数据统计
 
-### 1.1 Deploy Gas
+## 1 Deploy Gas
 
 | 操作                 | transaction cost | 
 | ------------------- | ---------------- | 
@@ -12,12 +11,7 @@ There are some deploy and test files in `truffle` folder. But truffle is limited
 | AccessControl.sol   | 3844394 gas      | 
 
 
-### 1.2 Bytecode size
-
-- Management.sol: 77,960 bytes(78.0 KB)
-- AccessControl.sol: 121,454 bytes(121.5 KB)
-
-## 2. 其他说明
+## 2. run prepare
 
 Quourm network created by quorum-wizard. 
 - choose simple network
@@ -50,9 +44,9 @@ Remix connect using rpcport, web3 connect using wsport
 
 ## 3. deploy record
 
-利用 Cakeshop 在 Node2 和 Node3 中新建一个账户，并转给新账户 1000 ETH
+use cakeshop create new account in Node2 and Node3, then send 1000 ETH to new account
 
-Node1 第一个账户部署 MC ，Node2 的两个账户分别是发起请求的设备和它的管理者，Node3 的两个账户分别是被请求的设备和它的管理者。
+Node1 account0 deploy MC, Node2 account0 is device that send request, Node2 account1 is manager of account0, Node3 is similar
 
 1. Node1 account0 deploy MC   
     deploy account: 0xed9d02e382b34818e88B88a309c7fe71E65f419d    
