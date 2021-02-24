@@ -172,44 +172,6 @@ var mcAbi = [
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_device",
-				"type": "address"
-			}
-		],
-		"name": "getTimeofUnblocked",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_scAddress",
-				"type": "address"
-			}
-		],
-		"name": "isContractAddress",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "owner",
 		"outputs": [
@@ -220,60 +182,6 @@ var mcAbi = [
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "rc",
-		"outputs": [
-			{
-				"internalType": "contract ReputationM",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "rcc",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "isValued",
-				"type": "bool"
-			},
-			{
-				"internalType": "address",
-				"name": "creator",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "scAddress",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_rc",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "_creator",
-				"type": "address"
-			}
-		],
-		"name": "setRC",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -340,37 +248,6 @@ var mcAbi = [
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_rc",
-				"type": "address"
-			}
-		],
-		"name": "updateRC",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_device",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_timeofUnblocked",
-				"type": "uint256"
-			}
-		],
-		"name": "updateTimeofUnblocked",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
 	}
 ];
 
@@ -383,10 +260,10 @@ var myMC = new web3.eth.Contract(mcAbi, mcAddr);
 var timeStamp = new Date().getTime();
 var attrValue = formatDate(timeStamp)
 
-const args = process.argv.slice(2)
+//const args = process.argv.slice(2)
 
 
-myMC.methods.updateAttribute("0xcA843569e3427144cEad5e4d5999a3D0cCF92B8e", args[0], attrValue).send({
+myMC.methods.updateAttribute("0xcA843569e3427144cEad5e4d5999a3D0cCF92B8e", "currentTime", attrValue).send({
 	from: "0xcA843569e3427144cEad5e4d5999a3D0cCF92B8e",
 	gas: 10000000,
 	gasPrice: 0
