@@ -250,14 +250,15 @@ var accAddr = "0xFe0602D820f42800E3EF3f89e1C39Cd15f78D283"
 var myACC = new web3.eth.Contract(accAbi, accAddr);
 
 
-myACC.methods.accessControl("0xb7D603ef60d92cA87b9e7FfE2952F22b8433bF95","switch", "on").send({
-	from: "0xfd441BCa68Ed8eCd6d5d4F5C173251a25E42316a",
+myACC.methods.accessControl("0xb474edb969802f81e5bb0c977bee3b0ab91736f8","switch", "on").send({
+	from: "0xd7107dd68050e7e35dabae85cbc9d3b83be4c8e2",
 	gas: 10000000,
 	gasPrice: 0
 }).then(function(receipt){
 	if (receipt.status) {
-	   process.exit(0);
-	}	
+	   console.log("Request success")	   
+	}
+	process.exit(0);	
 })
 
 
