@@ -159,3 +159,6 @@ Execute the second and the third script in order.
 
 ![](resources/send_request.png)
 
+Blockchain volume growth test
+
+![](resources/chain_size.png)
