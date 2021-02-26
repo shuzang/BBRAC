@@ -89,3 +89,8 @@ This branch is a reproduction of the following papers:
 
     - Call ACC，send request, result should be deny
 
+
+## Test
+
+![](resources/chain_size.png)
+
