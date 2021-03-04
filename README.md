@@ -1,46 +1,46 @@
-An attribute-based access control system. Implement in the Quorum blockchain using smart contract. Code and test in Remix, EVM version is byzantium, compiler version is 0.7.0, enable optimization and set 200 times. 
+BBRAC, Blockchain-based reputed access control system. It adopts the attribute-based access control model and design for IoT scenarios.
 
-There are some deploy and test files in `truffle` folder. But truffle is limited and our different contracts have complex deployment and calling relationships. That is why we don't use truffle later.
+We implement this system in the Quorum blockchain using smart contract. Code and test in Remix, EVM version is byzantium, compiler version is 0.7.0, enable optimization and set 200 times. 
 
-## 1.数据统计
+We have tried to deploy and test in truffle and there are some old scripts in `truffle` folder. But you should know truffle is limited because our different contracts have complex deployment and calling relationships. 
 
-### 1.1 Deploy Gas
 
-| 操作                 | transaction cost | execution cost |
-| ------------------- | ---------------- | -------------- |
-| Management.sol      | 2892826 gas      | 2147350 gas    |
-| Reputation.sol      | 2148487 gas      | 1630279 gas    |
-| AccessControl.sol   | 4221936 gas      | 3178588 gas    |
-| ABDKMathQuad.sol    | 76861 gas        | 17297 gas      |
+## 1. Statistics 
 
-### 1.2 Bytecode size
+All contracts are in `contracts` folder, deploy them in Remix JavaScript VM environment and get Gas cost(transaction cost not execution cost). The contract size is obtained by counting the bytecode of each contract.
 
-- ABDKMathQuad.sol: 885 bytes
-- Management.sol: 77,960 bytes(78.0 KB)
-- Reputation.sol: 102,088 bytes(102.1 KB) 
-- AccessControl.sol: 121,454 bytes(121.5 KB)
+| contract            | transaction cost | contract size           |
+| ------------------- | ---------------- | --------------          |
+| Management.sol      | 2892826 gas      | 77,960 bytes(78.0 KB)   |
+| Reputation.sol      | 2148487 gas      | 102,088 bytes(102.1 KB) |
+| AccessControl.sol   | 4221936 gas      | 121,454 bytes(121.5 KB) |
+| ABDKMathQuad.sol    | 76861 gas        | 885 bytes               |
 
-## 2. 其他说明
 
-Quourm network created by quorum-wizard. 
+## 2. Test preparation
+
+### Step1: Create test network(using quorum-wizard)
+
+```
+$ npm install -g quorum-wizard
+$ quorum-wizard -v
+
 - choose simple network
 - use bash scripts
 - use istanbul consensus
 - 4 nodes(minimum numbers of nodes)
 - Quourm 2.7.0
-- no Tessera
+- Tessera 0.10.5
 - use Cakeshop as chain explorer
 - network name: 4-nodes-istanbul-bash
 
+```
+
 ---
 
-use `./start.sh` to start network   
-use `./stop.sh` to stop network
-use `./attach.sh number` to attach node, number is node's number
+use `./start.sh` to start network, Cakeshop started at http://localhost:8999 after network started
 
-Cakeshop started at http://localhost:8999 after network started
-
-rpc and websocket port define as follows
+rpc and websocket port define as follows, Remix connect using rpc port, web3 connect using ws port
 
 | Node  | rpcport | wsport|
 |-------|---------|-------|
@@ -49,9 +49,11 @@ rpc and websocket port define as follows
 | Node3 |  22002  | 23002 |
 | Node4 |  22003  | 23003 |
 
-Remix connect using rpcport, web3 connect using wsport
 
-## 3. deploy record
+you can use `./stop.sh` to stop network and use `./attach.sh number` to attach node, number is node's number
+
+
+### Step2: deploy record
 
 利用 Cakeshop 在 Node1 中新建一个账户，并转给新账户 1000 ETH，Node2 和 Node3 做同样的操作。  
 
