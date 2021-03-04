@@ -25,12 +25,6 @@ var rcAbi = [
 			},
 			{
 				"indexed": false,
-				"internalType": "bool",
-				"name": "_ismisbehavior",
-				"type": "bool"
-			},
-			{
-				"indexed": false,
 				"internalType": "string",
 				"name": "_behavior",
 				"type": "string"
@@ -38,7 +32,7 @@ var rcAbi = [
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "_time",
+				"name": "_bn",
 				"type": "uint256"
 			},
 			{
@@ -50,7 +44,7 @@ var rcAbi = [
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "Tblocked",
+				"name": "Blocked",
 				"type": "uint256"
 			}
 		],
@@ -74,7 +68,7 @@ var rcAbi = [
 			},
 			{
 				"internalType": "uint256",
-				"name": "TimeofUnblocked",
+				"name": "endBBN",
 				"type": "uint256"
 			}
 		],
@@ -87,41 +81,12 @@ var rcAbi = [
 		"outputs": [
 			{
 				"internalType": "uint256",
+				"name": "omega",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
 				"name": "CrPmax",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_requester",
-				"type": "address"
-			},
-			{
-				"internalType": "uint8",
-				"name": "_behaviorType",
-				"type": "uint8"
-			}
-		],
-		"name": "getLastBehavior",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "_behaviorID",
-				"type": "uint256"
-			},
-			{
-				"internalType": "string",
-				"name": "_behavior",
-				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_time",
 				"type": "uint256"
 			}
 		],
@@ -133,20 +98,7 @@ var rcAbi = [
 		"name": "mc",
 		"outputs": [
 			{
-				"internalType": "contract ManagementR",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "mcAddress",
-		"outputs": [
-			{
-				"internalType": "address",
+				"internalType": "contract Management",
 				"name": "",
 				"type": "address"
 			}
@@ -175,23 +127,13 @@ var rcAbi = [
 				"type": "address"
 			},
 			{
-				"internalType": "bool",
-				"name": "_ismisbehavior",
-				"type": "bool"
-			},
-			{
 				"internalType": "uint8",
 				"name": "_behaviorID",
 				"type": "uint8"
 			},
 			{
-				"internalType": "string",
-				"name": "_behavior",
-				"type": "string"
-			},
-			{
 				"internalType": "uint256",
-				"name": "_time",
+				"name": "_bn",
 				"type": "uint256"
 			}
 		],
@@ -253,7 +195,6 @@ var rcAbi = [
 		"type": "function"
 	}
 ];
-
 var rcAddr = "0xAEaa9A4dE3f3F59AdeAcfAb5E7D1Cd0807979f27";
 var myRC = new web3.eth.Contract(rcAbi, rcAddr);
 
@@ -262,14 +203,12 @@ myRC.events.isCalled({
 }, function(error, result){
 		if(!error) {
 			//console.log(result)
-			console.log("Block number: "+result.blockNumber)
-			console.log("behavior from: "+result.returnValues._from);
-			console.log("is misbehavior: " + result.returnValues._ismisbehavior);
-			console.log("behavior: " + result.returnValues._behavior);
-			console.log("Time: " + result.returnValues._time);
+			console.log("Request from: "+result.returnValues._from);
+			console.log("Behavior description: " + result.returnValues._behavior);
+			console.log("Block number when behavior happen: " + result.returnValues._bn);
 			console.log("Credit: " + result.returnValues.Cr);
-			console.log("Blocked Time: " + result.returnValues.Tblocked + "s");
-			content = result.blockNumber + " " + result.returnValues._from + " " + result.returnValues._ismisbehavior + " " + result.returnValues._time + " " + result.returnValues.Cr + " " + result.returnValues.Tblocked + "s" + "\n";
+			console.log("Blocked block number: " + result.returnValues.Blocked);
+			content = result.returnValues._from + "," + result.returnValues._behavior + "," + result.returnValues._bn + "," + result.returnValues.Cr + "," + result.returnValues.Blocked + "\n";
 			fs.writeFile('./rcResult.txt', content, { flag: 'a+' }, err => {});
 			console.log('\n');
 		}

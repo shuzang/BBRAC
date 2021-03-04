@@ -53,11 +53,13 @@ rpc and websocket port define as follows, Remix connect using rpc port, web3 con
 you can use `./stop.sh` to stop network and use `./attach.sh number` to attach node, number is node's number
 
 
-### Step2: deploy record
+### Step2: deploy contract, add attribute and policy
 
-利用 Cakeshop 在 Node1 中新建一个账户，并转给新账户 1000 ETH，Node2 和 Node3 做同样的操作。  
+use cakeshop create new account in Node1, Node2 and Node3, then send 1000 ETH to new account
 
-Node1 两个账户分别部署 MC 和 RC，Node2 的两个账户分别是发起请求的设备和它的管理者，Node3 的两个账户分别是被请求的设备和它的管理者。
+Node1 account0 deploy MC, Node1 account1 deploy RC, Node2 account1 is device that send request, Node2 account0 is manager of account0, Node3 account1 is device that receive request, Node3 account0 is mananger of account0
+
+Note: Unlock related accounts before performing actions
 
 1. Node1 account0 deploy MC   
     deploy account: 0xed9d02e382b34818e88B88a309c7fe71E65f419d    
@@ -100,7 +102,7 @@ Node1 两个账户分别部署 MC 和 RC，Node2 的两个账户分别是发起�
     - ACC address: 0x87Ec4E85245D901DE66C09c96Bd53C8146e0C12D
     - deviceID: gateway202
     - deviceType: gateway
-    - deviceRole: manager
+    - deviceRole: non-validator
 
 7. Node2 account1 register    
     call account: 0xcA843569e3427144cEad5e4d5999a3D0cCF92B8e   
@@ -111,7 +113,6 @@ Node1 两个账户分别部署 MC 和 RC，Node2 的两个账户分别是发起�
     - deviceID: pallat23
     - deviceType: pallat
     - deviceRole: device
-
 
 8. Node3 account0 deploy ACC     
     deploy account: 0x0fBDc686b912d7722dc86510934589E0AAf3b55A    
@@ -139,7 +140,7 @@ Node1 两个账户分别部署 MC 和 RC，Node2 的两个账户分别是发起�
     - ACC address: 0x9E966663fCA74605357e328994D29a3D6D614C2F
     - deviceID: gateway203
     - deviceType: gateway
-    - deviceRole: manager
+    - deviceRole: non-validator
 
 11. Node3 account1 register   
     call account: 0x0fBDc686b912d7722dc86510934589E0AAf3b55A   
@@ -154,7 +155,7 @@ Node1 两个账户分别部署 MC 和 RC，Node2 的两个账户分别是发起�
 12. Node3 account1 addPolicy  
     call account: 0x0fBDc686b912d7722dc86510934589E0AAf3b55A   
     input:
-    - resource: location
+    - resource: basicInformation
     - action: read
     - attribute owner: subject
     - attribute name: deviceID
@@ -162,5 +163,13 @@ Node1 两个账户分别部署 MC 和 RC，Node2 的两个账户分别是发起�
     - attribute value: pallat23
     - importance: 0
 
-13. Node2 account1 access test(passed)
-14. Node2 account0 access test(passed)
+13. Node2 account1 access test(success)
+14. Node2 account0 access test(failed)
+
+### Step3: legal and illegal request
+web3.js is necessary when we execute scripts, install it in root directory. All scripts are in scripts folder.
+
+```
+# 1.2.8 is the only version we tested successfully
+$ npm install web3@1.2.8
+```

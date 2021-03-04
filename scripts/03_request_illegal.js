@@ -34,20 +34,20 @@ var accAbi = [
 			},
 			{
 				"indexed": false,
-				"internalType": "bool",
-				"name": "result",
-				"type": "bool"
-			},
-			{
-				"indexed": false,
 				"internalType": "string",
-				"name": "msg",
+				"name": "result",
 				"type": "string"
 			},
 			{
 				"indexed": false,
+				"internalType": "uint8",
+				"name": "behaviorID",
+				"type": "uint8"
+			},
+			{
+				"indexed": false,
 				"internalType": "uint256",
-				"name": "time",
+				"name": "bn",
 				"type": "uint256"
 			}
 		],
@@ -382,7 +382,7 @@ var accAbi = [
 		"name": "mc",
 		"outputs": [
 			{
-				"internalType": "contract ManagementA",
+				"internalType": "contract Management",
 				"name": "",
 				"type": "address"
 			}
@@ -395,7 +395,7 @@ var accAbi = [
 		"name": "rc",
 		"outputs": [
 			{
-				"internalType": "contract ReputationA",
+				"internalType": "contract Reputation",
 				"name": "",
 				"type": "address"
 			}
@@ -524,27 +524,22 @@ var accAbi = [
 		"type": "function"
 	}
 ];
-
 var accAddr = "0xfb1C803c6f1D5Ab6358a37881f67F66c45F0887c"
+var myACC = new web3.eth.Contract(accAbi, accAddr);
 
-async function illegalTest() {
-	const myACC = new web3.eth.Contract(accAbi, accAddr);
-	try {
-		const receipt = await myACC.methods.accessControl("location", "read").send({
-			from: "0xcA843569e3427144cEad5e4d5999a3D0cCF92B8e",
-			gas: 10000000,
-			gasPrice: 0
-		})
-		console.log("access failed!")
-		process.exit(0);
-	}catch (error) {
-		console.log("EVM revert!");
-		process.exit(1);
+myACC.methods.accessControl("basicInformation", "read").send({
+	from: "0xcA843569e3427144cEad5e4d5999a3D0cCF92B8e",
+	gas: 10000000,
+	gasPrice: 0
+}).then(function(receipt){
+	if (receipt.status) {
+	   console.log("access failed!")
+	   process.exit(0);
+	}else{
+	   console.log("EVM revert!")
+	   process.exit(1);
 	}
-}
-
-illegalTest();
-
+})
 
 
 

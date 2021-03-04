@@ -34,20 +34,20 @@ var accAbi = [
 			},
 			{
 				"indexed": false,
-				"internalType": "bool",
-				"name": "result",
-				"type": "bool"
-			},
-			{
-				"indexed": false,
 				"internalType": "string",
-				"name": "msg",
+				"name": "result",
 				"type": "string"
 			},
 			{
 				"indexed": false,
+				"internalType": "uint8",
+				"name": "behaviorID",
+				"type": "uint8"
+			},
+			{
+				"indexed": false,
 				"internalType": "uint256",
-				"name": "time",
+				"name": "bn",
 				"type": "uint256"
 			}
 		],
@@ -382,7 +382,7 @@ var accAbi = [
 		"name": "mc",
 		"outputs": [
 			{
-				"internalType": "contract ManagementA",
+				"internalType": "contract Management",
 				"name": "",
 				"type": "address"
 			}
@@ -395,7 +395,7 @@ var accAbi = [
 		"name": "rc",
 		"outputs": [
 			{
-				"internalType": "contract ReputationA",
+				"internalType": "contract Reputation",
 				"name": "",
 				"type": "address"
 			}
@@ -524,7 +524,6 @@ var accAbi = [
 		"type": "function"
 	}
 ];
-
 var accAddr = "0xfb1C803c6f1D5Ab6358a37881f67F66c45F0887c";
 var myACC = new web3.eth.Contract(accAbi, accAddr);
 
@@ -532,12 +531,12 @@ myACC.events.ReturnAccessResult({
 	fromBlock: 0
 }, function(error, result){
 		if(!error) {
-			console.log("Contract: "+result.address);
-			console.log("Block Number: "+result.blockNumber);
+			console.log("Contract address: "+result.address);
 			console.log("Tx Hash: "+result.transactionHash);
-			console.log("Time: "+result.returnValues.time);
-			console.log("Message: "+result.returnValues.msg);
-			console.log("Result: "+result.returnValues.result);
+			console.log("Request from: "+result.returnValues.from);
+			console.log("Access result: "+result.returnValues.result);
+			console.log("Behavior ID: "+result.returnValues.behaviorID);
+			console.log("Block number(submit to RC): "+result.returnValues.bn);
 			console.log('\n');
 		}
 })

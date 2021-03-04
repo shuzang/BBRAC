@@ -1,6 +1,3 @@
-# contract metadata
-bin/contracts
-
 # node_modules files
-scripts/node_modules
-scripts/package-lock.json
+node_modules
+package-lock.json
