@@ -51,12 +51,12 @@ contract Reputation {
     /// @dev initEnvironment initial parameters of reputation function
     function initEnvironment() internal {
         evAttr.alpha[0] = 2; // 0.2 
-        evAttr.alpha[1] = 2; // 0.3
-        evAttr.alpha[2] = 3; // 0.5
-        evAttr.omega = 3; // 0.1
+        evAttr.alpha[1] = 3; // 0.3
+        evAttr.alpha[2] = 5; // 0.5
+        evAttr.omega = 1; // 0.1
         evAttr.lambda[0] = 0x3ffe0000000000000000000000000000; // 0.5
         evAttr.lambda[1] = 0x3ffe0000000000000000000000000000; // 0.5
-        evAttr.CrPmax = 30; // 30
+        evAttr.CrPmax = 10; // 10
         //evAttr.gamma = 0x3ffd3333333333333333333333333333; // 0.3
     }
     
@@ -153,7 +153,7 @@ contract Reputation {
 
         // calculate penalty
         uint Tblocked;
-        if ((block.number > behaviorsLookup[_subject].endBBN) && (credit < 0)) {
+        if ((block.number > behaviorsLookup[_subject].endBBN) && (credit < 0) && (_behaviorID != 0)) {
             if (legLen > behaviorsLookup[_subject].begin) {
                 behaviorsLookup[_subject].begin = legLen-1;
             }
