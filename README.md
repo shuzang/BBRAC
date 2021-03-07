@@ -207,9 +207,16 @@ node script/05_monitorRC.js
 2. Switch Remix to access account (Node1 account1)
 3. Initiate continuous malicious access until the number of blocked blocks reaches 32
 
-### Step: Transaction collect testing
+### Step5: Transaction collect testing
 
 ```
 chmod +x script/11_transCollectTest.sh
 ./script/11_transCollectTest.sh
+```
+
+### Step6: Blockchain size growth testing
+
+```
+chmod +x script/09_chainGrowthTest.sh
+./script/09_chainGrowthTest.sh
 ```
