@@ -525,21 +525,26 @@ var accAbi = [
 	}
 ];
 var accAddr = "0xfb1C803c6f1D5Ab6358a37881f67F66c45F0887c"
-var myACC = new web3.eth.Contract(accAbi, accAddr);
 
-myACC.methods.accessControl("basicInformation", "read").send({
-	from: "0xcA843569e3427144cEad5e4d5999a3D0cCF92B8e",
-	gas: 10000000,
-	gasPrice: 0
-}).then(function(receipt){
-	if (receipt.status) {
-	   console.log("access failed!")
-	   process.exit(0);
-	}else{
-	   console.log("EVM revert!")
-	   process.exit(1);
+async function illegalTest() {
+	const myACC = new web3.eth.Contract(accAbi, accAddr);
+	try {
+		const receipt = await myACC.methods.accessControl("location", "read").send({
+			from: "0xb474edb969802f81e5bb0c977bee3b0ab91736f8",
+			gas: 10000000,
+			gasPrice: 0
+		})
+		console.log("Inportant policy check failed!")
+		process.exit(0);
+	}catch (error) {
+		console.log("EVM revert!");
+		process.exit(1);
 	}
-})
+}
+
+illegalTest();
+
+
 
 
 

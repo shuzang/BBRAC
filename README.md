@@ -154,6 +154,7 @@ Note: Unlock related accounts before performing actions
 
 12. Node3 account1 addPolicy  
     call account: 0x0fBDc686b912d7722dc86510934589E0AAf3b55A   
+    Call ACC: 0xfb1C803c6f1D5Ab6358a37881f67F66c45F0887c
     input:
     - resource: basicInformation
     - action: read
@@ -162,6 +163,18 @@ Note: Unlock related accounts before performing actions
     - operator: =
     - attribute value: pallat23
     - importance: 0
+
+13. Node3 account1 addPolicy
+    call account: 0x0fBDc686b912d7722dc86510934589E0AAf3b55A   
+    Call ACC: 0xfb1C803c6f1D5Ab6358a37881f67F66c45F0887c
+    input:
+    - resource: location
+    - action: read
+    - attribute owner: subject
+    - attribute name: deviceType
+    - operator: =
+    - attribute value: gateway
+    - importance: 2
 
 13. Node2 account1 access test(success)
 14. Node2 account0 access test(failed)
@@ -172,4 +185,18 @@ web3.js is necessary when we execute scripts, install it in root directory. All 
 ```
 # 1.2.8 is the only version we tested successfully
 $ npm install web3@1.2.8
+```
+
+unlock Node2 account1 10 min
+
+```
+chmod +x script/06_accessTest.sh
+./script/06_accessTest.sh
+```
+
+open two new terminal
+
+```
+node script/04_monitorACC.js
+node script/05_monitorRC.js
 ```
