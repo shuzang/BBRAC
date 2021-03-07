@@ -1,10 +1,10 @@
 #!/bin/bash
 echo "Test1: success" 
-	node 02_request_legal.js
-	node 02_request_legal.js
-	node 02_request_legal.js
+	node 02_request_legal1.js
+	node 02_request_legal1.js
+	node 02_request_legal1.js
 echo "Test2: failed"
-	node 02_request_legal.js
+	node 02_request_legal1.js
 
 sleep 20
 echo "Test3: failed"

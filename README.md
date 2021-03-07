@@ -200,3 +200,16 @@ open two new terminal
 node script/04_monitorACC.js
 node script/05_monitorRC.js
 ```
+
+### Step4: Continuous misbehavior testing
+
+1. The upper limit of reputation value is adjusted to 30
+2. Switch Remix to access account (Node1 account1)
+3. Initiate continuous malicious access until the number of blocked blocks reaches 32
+
+### Step: Transaction collect testing
+
+```
+chmod +x script/11_transCollectTest.sh
+./script/11_transCollectTest.sh
+```
